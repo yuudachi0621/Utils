@@ -1,3 +1,5 @@
 Utils.sln
 .vs/
+.vscode/
 bin/
+CMakeBuild/
