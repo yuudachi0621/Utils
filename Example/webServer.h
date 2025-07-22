@@ -1,4 +1,5 @@
 #pragma once
+#include "threadPool.h"
 
 #ifdef _MSC_VER
 #include <WinSock2.h>
@@ -24,8 +25,6 @@ public:
 };
 #endif
 
-#include "threadPool.h"
-
 constexpr auto BUFFER_SIZE = 4096;
 typedef struct ClientInfo
 {
@@ -41,7 +40,7 @@ typedef struct ClientInfo
 
 class webServer
 {
-    static const int webServerMaxCount = 40;
+    static const int webServerMaxCount = 30;
 
 public:
     webServer(
@@ -61,7 +60,29 @@ public:
 private:
     bool InitSocket();
 
+    void HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex& clientsMutex);
+
+    void ProcessClientActivities(std::vector<ClientInfo>& clients,
+                                 fd_set& readfds,
+                                 fd_set& writefds,
+                                 std::mutex& clientsMutex);
+
+    bool HandleClientRead(ClientInfo& client);
+
+    bool HandleClientWrite(ClientInfo& client);
+
     void ProcessHttpRequest(ClientInfo& client);
+
+    void CleanupClients(std::vector<ClientInfo>& clients);
+
+    void GenerateHttpResponse(ClientInfo& client, const char* timeStr, const char* ipStr);
+
+    void SendErrorResponse(ClientInfo& client, int code, const char* message);
+
+    bool GetClientIP(SOCKET socket, char* buffer, size_t bufferSize);
+
+private:
+    bool GetNowTime(char* buffer, size_t bufferSize);
 
 private:
 #ifdef _MSC_VER

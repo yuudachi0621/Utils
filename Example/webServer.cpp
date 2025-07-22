@@ -10,7 +10,7 @@ webServer::webServer(int port, bool OptLinger, int sqlPort, const char* sqlUser,
 
     if (!InitSocket())
     {
-        return;
+        printf("InitSocket failed\n");
     }
 }
 
@@ -22,28 +22,22 @@ webServer::~webServer()
 
 void webServer::Start()
 {
-    if (!InitSocket())
-    {
-        printf("Socket initialization failed\n");
-        return;
-    }
-
     fd_set readfds, writefds;
     struct timeval timeout;
-    ClientInfo clients[webServerMaxCount];
+    std::vector<ClientInfo> clients(webServerMaxCount);
+    std::mutex clientsMutex; // 用于保护clients数组的线程安全
 
     // 初始化客户端数组
-    for (int i = 0; i < webServerMaxCount; i++)
+    for (auto& client : clients)
     {
-        clients[i].socket    = INVALID_SOCKET;
-        clients[i].needWrite = false; // 初始化为不需要写
+        client.socket    = INVALID_SOCKET;
+        client.needWrite = false;
     }
 
     // 主循环
-    while (1)
+    while (true)
     {
-        // 每次循环重置timeout
-        timeout.tv_sec  = 5; // 5秒
+        timeout.tv_sec  = 5; // 每次循环重置timeout, 5秒
         timeout.tv_usec = 0;
 
         // 清空并设置文件描述符集合
@@ -53,22 +47,22 @@ void webServer::Start()
 
         SOCKET maxFd = m_listenFd;
 
-        // 添加客户端套接字并找出最大文件描述符
-        for (int i = 0; i < webServerMaxCount; i++)
+        // 构建文件描述符集合
         {
-            if (clients[i].socket != INVALID_SOCKET)
+            std::lock_guard<std::mutex> lock(clientsMutex);
+            for (auto& client : clients)
             {
-                FD_SET(clients[i].socket, &readfds);
-
-                // 只有当需要写时才监控写事件
-                if (clients[i].needWrite)
+                if (client.socket != INVALID_SOCKET)
                 {
-                    FD_SET(clients[i].socket, &writefds);
-                }
-
-                if (clients[i].socket > maxFd)
-                {
-                    maxFd = clients[i].socket;
+                    FD_SET(client.socket, &readfds);
+                    if (client.needWrite)
+                    {
+                        FD_SET(client.socket, &writefds);
+                    }
+                    if (client.socket > maxFd)
+                    {
+                        maxFd = client.socket;
+                    }
                 }
             }
         }
@@ -81,199 +75,320 @@ void webServer::Start()
             break;
         }
 
-        // 检查监听套接字是否有新连接
+        // 处理新连接
         if (FD_ISSET(m_listenFd, &readfds))
         {
-            SOCKET newSocket = accept(m_listenFd, NULL, NULL);
-            if (newSocket == INVALID_SOCKET)
-            {
-                int err = WSAGetLastError();
-                if (err != WSAEWOULDBLOCK)
-                {
-                    printf("accept failed: %d\n", err);
-                }
-                continue;
-            }
-
-            // 设置新客户端为非阻塞
-            u_long clientMode = 1;
-            ioctlsocket(newSocket, FIONBIO, &clientMode);
-
-            // 添加到客户端数组
-            bool isAdded = false;
-            for (int i = 0; i < webServerMaxCount; i++)
-            {
-                if (clients[i].socket == INVALID_SOCKET)
-                {
-                    clients[i].socket        = newSocket;
-                    clients[i].bytesReceived = 0;
-                    clients[i].needWrite     = false;
-                    memset(clients[i].buffer, 0, BUFFER_SIZE);
-                    isAdded = true;
-                    printf("New connection: socket %d\n", newSocket);
-                    break;
-                }
-            }
-            if (!isAdded)
-            {
-                printf("Too many connections, closing new socket\n");
-                closesocket(newSocket);
-            }
+            HandleNewConnection(clients, clientsMutex);
         }
 
-        // 检查客户端活动
-        for (int i = 0; i < webServerMaxCount; i++)
-        {
-            if (clients[i].socket == INVALID_SOCKET) continue;
-
-            // 处理读事件
-            if (FD_ISSET(clients[i].socket, &readfds))
-            {
-                // 接收数据
-                int recvResult = recv(clients[i].socket,
-                                      clients[i].buffer + clients[i].bytesReceived,
-                                      BUFFER_SIZE - clients[i].bytesReceived,
-                                      0);
-
-                if (recvResult == SOCKET_ERROR)
-                {
-                    int err = WSAGetLastError();
-                    if (err != WSAEWOULDBLOCK)
-                    {
-                        printf("recv failed: %d, closing socket %d\n", err, clients[i].socket);
-                        closesocket(clients[i].socket);
-                        clients[i].socket = INVALID_SOCKET;
-                    }
-                    continue;
-                }
-                else if (recvResult == 0)
-                {
-                    // 连接关闭
-                    printf("Connection closed by client, socket %d\n", clients[i].socket);
-                    closesocket(clients[i].socket);
-                    clients[i].socket = INVALID_SOCKET;
-                    continue;
-                }
-                else
-                {
-                    clients[i].bytesReceived += recvResult;
-
-                    // 检查缓冲区是否已满但未收到完整请求
-                    if (clients[i].bytesReceived >= BUFFER_SIZE && strstr(clients[i].buffer, "\r\n\r\n") == NULL)
-                    {
-                        printf("Request too large, closing connection\n");
-                        closesocket(clients[i].socket);
-                        clients[i].socket = INVALID_SOCKET;
-                        continue;
-                    }
-
-                    // 检查是否收到完整HTTP请求
-                    if (strstr(clients[i].buffer, "\r\n\r\n") != NULL)
-                    {
-                        // 将请求交给线程池处理
-                        m_threadPool->enqueue([this, i, &clients]() {
-                            // 处理HTTP请求并生成响应
-                            ProcessHttpRequest(clients[i]);
-                            // 处理完成后设置需要写标志
-                            clients[i].needWrite = true;
-                        });
-                    }
-                }
-            }
-
-            // 处理写事件
-            if (FD_ISSET(clients[i].socket, &writefds) && clients[i].needWrite)
-            {
-                // 发送剩余响应数据
-                int sendResult = send(clients[i].socket,
-                                      clients[i].response + clients[i].bytesSent,
-                                      clients[i].responseLength - clients[i].bytesSent,
-                                      0);
-
-                if (sendResult == SOCKET_ERROR)
-                {
-                    int err = WSAGetLastError();
-                    if (err != WSAEWOULDBLOCK)
-                    {
-                        printf("send failed: %d, closing socket %d\n", err, clients[i].socket);
-                        closesocket(clients[i].socket);
-                        clients[i].socket = INVALID_SOCKET;
-                    }
-                }
-                else
-                {
-                    clients[i].bytesSent += sendResult;
-
-                    // 检查是否发送完成
-                    if (clients[i].bytesSent >= clients[i].responseLength)
-                    {
-                        // 重置写状态
-                        clients[i].needWrite      = false;
-                        clients[i].responseLength = 0;
-                        clients[i].bytesSent      = 0;
-
-                        // 关闭连接（简单实现中每次请求后关闭）
-                        closesocket(clients[i].socket);
-                        clients[i].socket = INVALID_SOCKET;
-                        printf("Response sent, connection closed\n");
-                    }
-                }
-            }
-        }
+        // 处理客户端活动
+        ProcessClientActivities(clients, readfds, writefds, clientsMutex);
     }
 
-    // 清理所有客户端连接
-    for (int i = 0; i < webServerMaxCount; i++)
-    {
-        if (clients[i].socket != INVALID_SOCKET)
-        {
-            closesocket(clients[i].socket);
-        }
-    }
+    // 清理
+    CleanupClients(clients);
 }
 
 void webServer::ProcessHttpRequest(ClientInfo& client)
 {
-    // 解析HTTP请求
-    // 这里可以添加更复杂的HTTP请求处理逻辑
+    // 获取当前时间
+    char timeStr[64] = {0};
+    if (!GetNowTime(timeStr, sizeof(timeStr)))
+    {
+        SendErrorResponse(client, 500, "Failed to get server time");
+        return;
+    }
 
-    // 示例：生成响应
-    const char* body = "Hello, World!";
-    const char* header =
+    // 获取客户端IP
+    char ipStr[22] = {0};
+    if (!GetClientIP(client.socket, ipStr, sizeof(ipStr)))
+    {
+        SendErrorResponse(client, 500, "Failed to get client IP");
+        return;
+    }
+
+    // 生成响应内容
+    GenerateHttpResponse(client, timeStr, ipStr);
+}
+
+void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex& clientsMutex)
+{
+    SOCKET newSocket = accept(m_listenFd, NULL, NULL);
+    if (newSocket == INVALID_SOCKET)
+    {
+        int err = WSAGetLastError();
+        if (err != WSAEWOULDBLOCK)
+        {
+            printf("accept failed: %d\n", err);
+        }
+        return;
+    }
+
+    // 设置非阻塞模式
+    u_long mode = 1;
+    if (ioctlsocket(newSocket, FIONBIO, &mode) == SOCKET_ERROR)
+    {
+        printf("ioctlsocket failed: %d\n", WSAGetLastError());
+        closesocket(newSocket);
+        return;
+    }
+
+    // 添加到客户端数组
+    std::lock_guard<std::mutex> lock(clientsMutex);
+    for (auto& client : clients)
+    {
+        if (client.socket == INVALID_SOCKET)
+        {
+            client.socket        = newSocket;
+            client.bytesReceived = 0;
+            client.needWrite     = false;
+            memset(client.buffer, 0, BUFFER_SIZE);
+            printf("New connection: socket %d\n", newSocket);
+            return;
+        }
+    }
+
+    printf("Too many connections, closing new socket\n");
+    closesocket(newSocket);
+}
+
+void webServer::ProcessClientActivities(std::vector<ClientInfo>& clients, fd_set& readfds, fd_set& writefds, std::mutex& clientsMutex)
+{
+    std::lock_guard<std::mutex> lock(clientsMutex);
+
+    for (size_t i = 0; i < clients.size(); ++i)
+    {
+        auto& client = clients[i];
+        if (client.socket == INVALID_SOCKET) continue;
+
+        // 处理读事件
+        if (FD_ISSET(client.socket, &readfds))
+        {
+            if (!HandleClientRead(client))
+            {
+                continue;
+            }
+        }
+
+        // 处理写事件
+        if (FD_ISSET(client.socket, &writefds) && client.needWrite)
+        {
+            if (!HandleClientWrite(client))
+            {
+                continue;
+            }
+        }
+    }
+}
+
+bool webServer::HandleClientRead(ClientInfo& client)
+{
+    int recvResult = recv(client.socket,
+                          client.buffer + client.bytesReceived,
+                          BUFFER_SIZE - client.bytesReceived,
+                          0);
+
+    if (recvResult == SOCKET_ERROR)
+    {
+        int err = WSAGetLastError();
+        if (err != WSAEWOULDBLOCK)
+        {
+            printf("recv failed: %d, closing socket %d\n", err, client.socket);
+            closesocket(client.socket);
+            client.socket = INVALID_SOCKET;
+        }
+        return false;
+    }
+    else if (recvResult == 0)
+    {
+        printf("Connection closed by client, socket %d\n", client.socket);
+        closesocket(client.socket);
+        client.socket = INVALID_SOCKET;
+        return false;
+    }
+
+    client.bytesReceived += recvResult;
+
+    // 检查缓冲区状态
+    if (client.bytesReceived >= BUFFER_SIZE && strstr(client.buffer, "\r\n\r\n") == NULL)
+    {
+        printf("Request too large, closing connection\n");
+        closesocket(client.socket);
+        client.socket = INVALID_SOCKET;
+        return false;
+    }
+
+    // 处理完整请求
+    if (strstr(client.buffer, "\r\n\r\n") != NULL)
+    {
+        // 使用线程池处理请求
+        auto ret = m_threadPool->enqueue([this, &client]() {
+            ProcessHttpRequest(client);
+            client.needWrite = true;
+        });
+    }
+    return true;
+}
+
+bool webServer::HandleClientWrite(ClientInfo& client)
+{
+    int sendResult = send(client.socket,
+                          client.response + client.bytesSent,
+                          client.responseLength - client.bytesSent,
+                          0);
+
+    if (sendResult == SOCKET_ERROR)
+    {
+        int err = WSAGetLastError();
+        if (err != WSAEWOULDBLOCK)
+        {
+            printf("send failed: %d, closing socket %d\n", err, client.socket);
+            closesocket(client.socket);
+            client.socket = INVALID_SOCKET;
+            return false;
+        }
+        return true;
+    }
+
+    client.bytesSent += sendResult;
+
+    if (client.bytesSent >= client.responseLength)
+    {
+        client.needWrite      = false;
+        client.responseLength = 0;
+        client.bytesSent      = 0;
+        closesocket(client.socket);
+        client.socket = INVALID_SOCKET;
+        printf("Response sent, connection closed\n");
+        return false;
+    }
+    return true;
+}
+
+void webServer::CleanupClients(std::vector<ClientInfo>& clients)
+{
+    for (auto& client : clients)
+    {
+        if (client.socket != INVALID_SOCKET)
+        {
+            closesocket(client.socket);
+        }
+    }
+}
+
+void webServer::SendErrorResponse(ClientInfo& client, int code, const char* message)
+{
+    const char* errorResponse =
+        "HTTP/1.1 %d Error\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %d\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s";
+
+    int messageLength = strlen(message);
+    int headerLength  = snprintf(nullptr, 0, errorResponse, code, messageLength);
+    int totalLength   = headerLength + messageLength;
+
+    if (totalLength >= BUFFER_SIZE)
+    {
+        // 如果错误响应也太大，使用最小错误响应
+        const char* minimalError =
+            "HTTP/1.1 500 Error\r\n"
+            "Content-Length: 0\r\n"
+            "Connection: close\r\n"
+            "\r\n";
+
+        strncpy_s(client.response, BUFFER_SIZE, minimalError, _TRUNCATE);
+        client.responseLength = strlen(minimalError);
+    }
+    else
+    {
+        snprintf(client.response, BUFFER_SIZE, errorResponse, code, messageLength, message);
+        client.responseLength = totalLength;
+    }
+    client.bytesSent = 0;
+}
+
+void webServer::GenerateHttpResponse(ClientInfo& client, const char* timeStr, const char* ipStr)
+{
+    // 计算响应体长度
+    const char bodyFormat[] =
+        "<html><body>"
+        "<h1>Hello, World!</h1>"
+        "<p>Server Time: %s</p>"
+        "<p>Your IP: %s</p>"
+        "</body></html>";
+
+    // 使用栈内存避免动态分配
+    char body[1024] = {0};
+    int bodyLength  = snprintf(body, sizeof(body), bodyFormat, timeStr, ipStr);
+    if (bodyLength <= 0 || bodyLength >= static_cast<int>(sizeof(body)))
+    {
+        SendErrorResponse(client, 500, "Failed to format response body");
+        return;
+    }
+
+    // 构建响应头
+    const char headerFormat[] =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
         "Content-Length: %d\r\n"
         "Connection: close\r\n"
         "\r\n";
 
-    // 计算响应总长度
-    int bodyLength   = strlen(body);
-    int headerLength = snprintf(nullptr, 0, header, bodyLength);
+    int headerLength = snprintf(nullptr, 0, headerFormat, bodyLength);
     int totalLength  = headerLength + bodyLength;
 
-    // 检查响应是否超过缓冲区大小
+    // 检查缓冲区大小
     if (totalLength >= BUFFER_SIZE)
     {
-        const char* errorResponse =
-            "HTTP/1.1 500 Internal Server Error\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: 21\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "Response too large";
+        SendErrorResponse(client, 500, "Response too large");
+        return;
+    }
 
-        strncpy(client.response, errorResponse, BUFFER_SIZE - 1);
-        client.response[BUFFER_SIZE - 1] = '\0';
-        client.responseLength            = strlen(client.response);
-    }
-    else
+    // 构建完整响应
+    int written = snprintf(client.response, BUFFER_SIZE, headerFormat, bodyLength);
+    if (written <= 0 || written >= BUFFER_SIZE)
     {
-        // 构建响应
-        snprintf(client.response, BUFFER_SIZE, header, bodyLength);
-        strncat(client.response, body, BUFFER_SIZE - strlen(client.response) - 1);
-        client.responseLength = totalLength;
+        SendErrorResponse(client, 500, "Failed to format response header");
+        return;
     }
-    client.bytesSent = 0;
+
+    strncat_s(client.response, BUFFER_SIZE, body, _TRUNCATE);
+    client.responseLength = totalLength;
+    client.bytesSent      = 0;
+}
+
+bool webServer::GetClientIP(SOCKET socket, char* buffer, size_t bufferSize)
+{
+    sockaddr_in addr = {0};
+    int addrLen      = sizeof(addr);
+
+    if (getpeername(socket, (sockaddr*)&addr, &addrLen) == SOCKET_ERROR)
+    {
+        return false;
+    }
+
+    DWORD ipStrLength = static_cast<DWORD>(bufferSize);
+    return WSAAddressToStringA(
+               (LPSOCKADDR)&addr,
+               sizeof(addr),
+               NULL,
+               buffer,
+               &ipStrLength)
+           == 0;
+}
+
+bool webServer::GetNowTime(char* buffer, size_t bufferSize)
+{
+    time_t now = time(nullptr);
+    if (now == -1) return false;
+
+    struct tm tm;
+    if (localtime_s(&tm, &now)) return false;
+
+    return strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", &tm) > 0;
 }
 
 bool webServer::InitSocket()
