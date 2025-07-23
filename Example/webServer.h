@@ -2,6 +2,8 @@
 #include "threadPool.h"
 
 #ifdef _MSC_VER
+#define NOMINMAX            // 禁用 min/max 宏
+#define WIN32_LEAN_AND_MEAN // 减少 Windows 头文件的冗余内容
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32.lib")
 

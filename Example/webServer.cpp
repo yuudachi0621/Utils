@@ -37,8 +37,15 @@ void webServer::Start()
     // 主循环
     while (true)
     {
-        timeout.tv_sec  = 5; // 每次循环重置timeout, 5秒
+        timeout.tv_sec  = 0; // 每次循环重置timeout, 1秒
         timeout.tv_usec = 0;
+
+        // 添加一个元素
+        // FD_SET(socketServer, &allSockets);
+        // 删除一个元素
+        // FD_CLR(socketServer, &allSockets);
+        // 判断socket是否在集合中，不在返回0，在则返回非0
+        // FD_ISSET(socketServer, &allSockets);
 
         // 清空并设置文件描述符集合
         FD_ZERO(&readfds);
