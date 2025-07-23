@@ -1,5 +1,7 @@
 #pragma once
+#include "VariableBuffer.h"
 #include "threadPool.h"
+#include <atomic>
 
 #ifdef _MSC_VER
 #define NOMINMAX            // 禁用 min/max 宏
@@ -13,11 +15,9 @@ public:
     WSAInit()
     {
         WSADATA swaData;
-        int result = WSAStartup(MAKEWORD(2, 2), &swaData);
-        if (result != 0)
+        if (0 != WSAStartup(MAKEWORD(2, 2), &swaData))
         {
-            // handle error
-            return;
+            printf("WSAInit failed\n");
         }
     }
     ~WSAInit()
@@ -27,17 +27,13 @@ public:
 };
 #endif
 
-constexpr auto BUFFER_SIZE = 4096;
+static constexpr auto TEMP_BUFFER_SIZE = 4096;
 typedef struct ClientInfo
 {
     SOCKET socket;
-    char buffer[BUFFER_SIZE];
-    int bytesReceived;
-
-    bool needWrite; // 是否需要监控写事件
-    char response[BUFFER_SIZE];
-    int responseLength;
-    int bytesSent;
+    std::atomic<bool> needWrite; // 是否需要监控写事件
+    VariableBuffer readBuff;
+    VariableBuffer writeBuff;
 };
 
 class webServer
@@ -81,10 +77,10 @@ private:
 
     void SendErrorResponse(ClientInfo& client, int code, const char* message);
 
-    bool GetClientIP(SOCKET socket, char* buffer, size_t bufferSize);
+    bool GetClientIP(SOCKET socket, char* Buffer, size_t bufferSize);
 
 private:
-    bool GetNowTime(char* buffer, size_t bufferSize);
+    bool GetNowTime(char* Buffer, size_t bufferSize);
 
 private:
 #ifdef _MSC_VER

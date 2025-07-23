@@ -1,5 +1,6 @@
 #include "webServer.h"
 #include "sqlConnPool.h"
+#include "stringUtil.h"
 
 webServer::webServer(int port, bool OptLinger, int sqlPort, const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum, int threadNum)
 {
@@ -32,6 +33,8 @@ void webServer::Start()
     {
         client.socket    = INVALID_SOCKET;
         client.needWrite = false;
+        client.readBuff.Reset();
+        client.writeBuff.Reset();
     }
 
     // 主循环
@@ -87,7 +90,6 @@ void webServer::Start()
         {
             HandleNewConnection(clients, clientsMutex);
         }
-
         // 处理客户端活动
         ProcessClientActivities(clients, readfds, writefds, clientsMutex);
     }
@@ -113,7 +115,6 @@ void webServer::ProcessHttpRequest(ClientInfo& client)
         SendErrorResponse(client, 500, "Failed to get client IP");
         return;
     }
-
     // 生成响应内容
     GenerateHttpResponse(client, timeStr, ipStr);
 }
@@ -146,15 +147,14 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
     {
         if (client.socket == INVALID_SOCKET)
         {
-            client.socket        = newSocket;
-            client.bytesReceived = 0;
-            client.needWrite     = false;
-            memset(client.buffer, 0, BUFFER_SIZE);
+            client.needWrite = false;
+            client.socket    = newSocket;
+            client.readBuff.Reset();
+            client.writeBuff.Reset();
             printf("New connection: socket %d\n", newSocket);
             return;
         }
     }
-
     printf("Too many connections, closing new socket\n");
     closesocket(newSocket);
 }
@@ -190,9 +190,11 @@ void webServer::ProcessClientActivities(std::vector<ClientInfo>& clients, fd_set
 
 bool webServer::HandleClientRead(ClientInfo& client)
 {
+    char clientData[TEMP_BUFFER_SIZE]{0};
+
     int recvResult = recv(client.socket,
-                          client.buffer + client.bytesReceived,
-                          BUFFER_SIZE - client.bytesReceived,
+                          clientData,
+                          TEMP_BUFFER_SIZE,
                           0);
 
     if (recvResult == SOCKET_ERROR)
@@ -214,19 +216,10 @@ bool webServer::HandleClientRead(ClientInfo& client)
         return false;
     }
 
-    client.bytesReceived += recvResult;
-
-    // 检查缓冲区状态
-    if (client.bytesReceived >= BUFFER_SIZE && strstr(client.buffer, "\r\n\r\n") == NULL)
-    {
-        printf("Request too large, closing connection\n");
-        closesocket(client.socket);
-        client.socket = INVALID_SOCKET;
-        return false;
-    }
+    client.readBuff.Append(clientData, recvResult);
 
     // 处理完整请求
-    if (strstr(client.buffer, "\r\n\r\n") != NULL)
+    if (util::StringUtil::Find(client.readBuff.GetValidData(), client.readBuff.ValidLength(), "\r\n\r\n", strlen("\r\n\r\n")) != nullptr)
     {
         // 使用线程池处理请求
         auto ret = m_threadPool->enqueue([this, &client]() {
@@ -240,8 +233,8 @@ bool webServer::HandleClientRead(ClientInfo& client)
 bool webServer::HandleClientWrite(ClientInfo& client)
 {
     int sendResult = send(client.socket,
-                          client.response + client.bytesSent,
-                          client.responseLength - client.bytesSent,
+                          client.writeBuff.GetValidData(),
+                          client.writeBuff.ValidLength(),
                           0);
 
     if (sendResult == SOCKET_ERROR)
@@ -257,13 +250,12 @@ bool webServer::HandleClientWrite(ClientInfo& client)
         return true;
     }
 
-    client.bytesSent += sendResult;
+    client.writeBuff.AddReadPos(sendResult);
 
-    if (client.bytesSent >= client.responseLength)
+    if (client.writeBuff.ValidLength() < 0)
     {
-        client.needWrite      = false;
-        client.responseLength = 0;
-        client.bytesSent      = 0;
+        client.needWrite = false;
+        client.writeBuff.Reset();
         closesocket(client.socket);
         client.socket = INVALID_SOCKET;
         printf("Response sent, connection closed\n");
@@ -297,7 +289,7 @@ void webServer::SendErrorResponse(ClientInfo& client, int code, const char* mess
     int headerLength  = snprintf(nullptr, 0, errorResponse, code, messageLength);
     int totalLength   = headerLength + messageLength;
 
-    if (totalLength >= BUFFER_SIZE)
+    if (totalLength >= TEMP_BUFFER_SIZE)
     {
         // 如果错误响应也太大，使用最小错误响应
         const char* minimalError =
@@ -306,15 +298,13 @@ void webServer::SendErrorResponse(ClientInfo& client, int code, const char* mess
             "Connection: close\r\n"
             "\r\n";
 
-        strncpy_s(client.response, BUFFER_SIZE, minimalError, _TRUNCATE);
-        client.responseLength = strlen(minimalError);
+        client.writeBuff.Append(minimalError, strlen(minimalError));
     }
     else
     {
-        snprintf(client.response, BUFFER_SIZE, errorResponse, code, messageLength, message);
-        client.responseLength = totalLength;
+        std::string errResp = util::StringUtil::Format(errorResponse, code, messageLength, message);
+        client.writeBuff.Append(errResp.data(), errResp.size());
     }
-    client.bytesSent = 0;
 }
 
 void webServer::GenerateHttpResponse(ClientInfo& client, const char* timeStr, const char* ipStr)
@@ -327,15 +317,6 @@ void webServer::GenerateHttpResponse(ClientInfo& client, const char* timeStr, co
         "<p>Your IP: %s</p>"
         "</body></html>";
 
-    // 使用栈内存避免动态分配
-    char body[1024] = {0};
-    int bodyLength  = snprintf(body, sizeof(body), bodyFormat, timeStr, ipStr);
-    if (bodyLength <= 0 || bodyLength >= static_cast<int>(sizeof(body)))
-    {
-        SendErrorResponse(client, 500, "Failed to format response body");
-        return;
-    }
-
     // 构建响应头
     const char headerFormat[] =
         "HTTP/1.1 200 OK\r\n"
@@ -344,30 +325,15 @@ void webServer::GenerateHttpResponse(ClientInfo& client, const char* timeStr, co
         "Connection: close\r\n"
         "\r\n";
 
-    int headerLength = snprintf(nullptr, 0, headerFormat, bodyLength);
-    int totalLength  = headerLength + bodyLength;
+    int bodyLength = snprintf(nullptr, 0, bodyFormat, timeStr, ipStr);
 
-    // 检查缓冲区大小
-    if (totalLength >= BUFFER_SIZE)
-    {
-        SendErrorResponse(client, 500, "Response too large");
-        return;
-    }
+    std::string responseData = util::StringUtil::Format(headerFormat, bodyLength);
+    responseData += util::StringUtil::Format(bodyFormat, timeStr, ipStr);
 
-    // 构建完整响应
-    int written = snprintf(client.response, BUFFER_SIZE, headerFormat, bodyLength);
-    if (written <= 0 || written >= BUFFER_SIZE)
-    {
-        SendErrorResponse(client, 500, "Failed to format response header");
-        return;
-    }
-
-    strncat_s(client.response, BUFFER_SIZE, body, _TRUNCATE);
-    client.responseLength = totalLength;
-    client.bytesSent      = 0;
+    client.writeBuff.Append(responseData.data(), responseData.size());
 }
 
-bool webServer::GetClientIP(SOCKET socket, char* buffer, size_t bufferSize)
+bool webServer::GetClientIP(SOCKET socket, char* Buffer, size_t bufferSize)
 {
     sockaddr_in addr = {0};
     int addrLen      = sizeof(addr);
@@ -382,12 +348,12 @@ bool webServer::GetClientIP(SOCKET socket, char* buffer, size_t bufferSize)
                (LPSOCKADDR)&addr,
                sizeof(addr),
                NULL,
-               buffer,
+               Buffer,
                &ipStrLength)
            == 0;
 }
 
-bool webServer::GetNowTime(char* buffer, size_t bufferSize)
+bool webServer::GetNowTime(char* Buffer, size_t bufferSize)
 {
     time_t now = time(nullptr);
     if (now == -1) return false;
@@ -395,7 +361,7 @@ bool webServer::GetNowTime(char* buffer, size_t bufferSize)
     struct tm tm;
     if (localtime_s(&tm, &now)) return false;
 
-    return strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", &tm) > 0;
+    return strftime(Buffer, bufferSize, "%Y-%m-%d %H:%M:%S", &tm) > 0;
 }
 
 bool webServer::InitSocket()

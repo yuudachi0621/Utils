@@ -6,7 +6,7 @@ using namespace util;
 
 void httpParser::Init(const ClientInfo& client)
 {
-    m_reqMessage = std::string(client.buffer, client.bytesReceived);
+    m_reqMessage = std::string(client.readBuff.GetValidData(), client.readBuff.ValidLength());
 }
 
 bool httpParser::Parser(const std::string& message)
