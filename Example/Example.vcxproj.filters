@@ -18,16 +18,16 @@
     <ClCompile Include="..\src\main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="sqlConnPool.cpp">
+    <ClCompile Include="..\src\http\webServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="webServer.cpp">
+    <ClCompile Include="..\src\VariableBuffer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="httpParser.cpp">
+    <ClCompile Include="..\src\pool\sqlConnPool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="VariableBuffer.cpp">
+    <ClCompile Include="..\src\http\httpParser.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,16 +35,16 @@
     <ClInclude Include="..\src\leetcode.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="sqlConnPool.h">
+    <ClInclude Include="..\src\http\webServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="webServer.h">
+    <ClInclude Include="..\src\VariableBuffer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="httpParser.h">
+    <ClInclude Include="..\src\pool\sqlConnPool.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="VariableBuffer.h">
+    <ClInclude Include="..\src\http\httpParser.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

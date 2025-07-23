@@ -41,9 +41,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\thread\ThreadPool.h">
-      <Filter>头文件\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\log\log.h">
       <Filter>头文件\log</Filter>
     </ClInclude>
@@ -58,6 +55,9 @@
     </ClInclude>
     <ClInclude Include="..\src\3rd\easyloggingpp\easylogging++.h">
       <Filter>头文件\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pool\ThreadPool.h">
+      <Filter>头文件\thread</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

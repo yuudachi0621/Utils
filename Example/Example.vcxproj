@@ -114,7 +114,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\thread;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;E:\Code\Utils\Example;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\pool;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;$(SolutionDir)src\http;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -133,7 +133,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\thread;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;E:\Code\Utils\Example;E:\Code\Utils\src\container</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\pool;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;$(SolutionDir)src\http;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -146,18 +146,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\http\httpParser.cpp" />
+    <ClCompile Include="..\src\http\webServer.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="VariableBuffer.cpp" />
-    <ClCompile Include="httpParser.cpp" />
-    <ClCompile Include="sqlConnPool.cpp" />
-    <ClCompile Include="webServer.cpp" />
+    <ClCompile Include="..\src\pool\sqlConnPool.cpp" />
+    <ClCompile Include="..\src\VariableBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\http\httpParser.h" />
+    <ClInclude Include="..\src\http\webServer.h" />
     <ClInclude Include="..\src\leetcode.h" />
-    <ClInclude Include="VariableBuffer.h" />
-    <ClInclude Include="httpParser.h" />
-    <ClInclude Include="sqlConnPool.h" />
-    <ClInclude Include="webServer.h" />
+    <ClInclude Include="..\src\pool\sqlConnPool.h" />
+    <ClInclude Include="..\src\VariableBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
