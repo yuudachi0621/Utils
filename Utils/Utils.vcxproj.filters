@@ -16,15 +16,48 @@
     <Filter Include="头文件\thread">
       <UniqueIdentifier>{96ea3f5e-416a-4a39-addd-4d142f3e947c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\log">
+      <UniqueIdentifier>{eb390b59-86ff-49d1-8635-f8daefbce860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\log">
+      <UniqueIdentifier>{a25c859d-62d0-48e8-b9d0-060ee177d6ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\json">
+      <UniqueIdentifier>{d2a1cce1-346e-4819-aa47-2eb873198464}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\container">
+      <UniqueIdentifier>{a453ca5d-fb6d-4601-9f7d-71bd0177c936}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\main.cpp">
+    <ClCompile Include="..\src\log\log.cpp">
+      <Filter>源文件\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\3rd\easyloggingpp\easylogging++.cc">
+      <Filter>源文件\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stringUtil.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\thread\ThreadPool.h">
       <Filter>头文件\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\log\log.h">
+      <Filter>头文件\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\container\safeQueue.h">
+      <Filter>头文件\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stringUtil.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\json\json.hpp">
+      <Filter>头文件\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\easyloggingpp\easylogging++.h">
+      <Filter>头文件\log</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

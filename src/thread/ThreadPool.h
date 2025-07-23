@@ -56,12 +56,11 @@ public:
 
     template <class F, class... Args>
     auto enqueue(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>
+        -> std::future<std::invoke_result_t<F, Args...>>
     {
-        using returnType = typename std::result_of<F(Args...)>::type;
+        using returnType = std::invoke_result_t<F, Args...>;
 
-        auto task = std::make_shared<std::packaged_task<returnType()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        auto task = std::make_shared<std::packaged_task<returnType()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
         std::future<returnType> res = task->get_future();
         {
@@ -71,7 +70,9 @@ public:
             {
                 throw std::runtime_error("enqueue error! ThreadPool is invalid!");
             }
-            m_tasks.emplace([task]() { (*task)(); });
+            m_tasks.emplace([task]() {
+                (*task)();
+            });
         }
         m_condition.notify_one();
         return res;
