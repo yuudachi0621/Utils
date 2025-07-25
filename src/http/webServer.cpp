@@ -1,17 +1,35 @@
 #include "webServer.h"
+#include "log.h"
 #include "sqlConnPool.h"
 #include "stringUtil.h"
 
-webServer::webServer(int port, bool OptLinger, int sqlPort, const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum, int threadNum)
+using namespace util;
+
+webServer::webServer(int port, bool OptLinger, int sqlPort, const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum, int threadNum, bool openLog, int logLevel)
 {
     m_port       = port;
     m_openLiger  = OptLinger;
     m_threadPool = std::make_unique<util::ThreadPool>(threadNum);
     sqlConnPool::Instance().Init("127.0.0.1", sqlPort, sqlUser, sqlPwd, dbName, connPoolNum);
 
+    if (openLog)
+    {
+        Log::GetInstance().Init(logLevel, "./log", ".log", true);
+    }
+
     if (!InitSocket())
     {
-        printf("InitSocket failed\n");
+        LOG_ERROR("InitSocket failed");
+        LOG_ERROR("========== Server init error!==========");
+    }
+    else
+    {
+        LOG_INFO("========== Server init ==========");
+        LOG_INFO("Port:%d, OpenLinger: %s", m_port, m_openLiger ? "true" : "false");
+        LOG_INFO("Log Level: %d", logLevel);
+        LOG_INFO("SrcDir: %s", m_srcPath.data());
+        LOG_INFO("Connect database: %s", dbName);
+        LOG_INFO("SqlConnPool num: %d, ThreadPool num: %d", connPoolNum, threadNum);
     }
 }
 
@@ -23,6 +41,8 @@ webServer::~webServer()
 
 void webServer::Start()
 {
+    LOG_INFO("========== Server start ==========");
+
     fd_set readfds, writefds;
     struct timeval timeout;
     std::vector<ClientInfo> clients(webServerMaxCount);
@@ -81,7 +101,7 @@ void webServer::Start()
         int activity = select(maxFd + 1, &readfds, &writefds, NULL, &timeout);
         if (activity == SOCKET_ERROR)
         {
-            printf("select error: %d\n", WSAGetLastError());
+            LOG_ERROR("select error: %d", WSAGetLastError());
             break;
         }
 
@@ -127,7 +147,7 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
         int err = WSAGetLastError();
         if (err != WSAEWOULDBLOCK)
         {
-            printf("accept failed: %d\n", err);
+            LOG_ERROR("accept failed: %d", err);
         }
         return;
     }
@@ -136,7 +156,7 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
     u_long mode = 1;
     if (ioctlsocket(newSocket, FIONBIO, &mode) == SOCKET_ERROR)
     {
-        printf("ioctlsocket failed: %d\n", WSAGetLastError());
+        LOG_ERROR("ioctlsocket failed: %d", WSAGetLastError());
         closesocket(newSocket);
         return;
     }
@@ -151,11 +171,11 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
             client.socket    = newSocket;
             client.readBuff.Reset();
             client.writeBuff.Reset();
-            printf("New connection: socket %d\n", newSocket);
+            LOG_INFO("New connection: socket %d", newSocket);
             return;
         }
     }
-    printf("Too many connections, closing new socket\n");
+    LOG_INFO("Too many connections, closing new socket");
     closesocket(newSocket);
 }
 
@@ -202,7 +222,7 @@ bool webServer::HandleClientRead(ClientInfo& client)
         int err = WSAGetLastError();
         if (err != WSAEWOULDBLOCK)
         {
-            printf("recv failed: %d, closing socket %d\n", err, client.socket);
+            LOG_ERROR("recv failed: %d, closing socket %d", err, client.socket);
             closesocket(client.socket);
             client.socket = INVALID_SOCKET;
         }
@@ -210,7 +230,7 @@ bool webServer::HandleClientRead(ClientInfo& client)
     }
     else if (recvResult == 0)
     {
-        printf("Connection closed by client, socket %d\n", client.socket);
+        LOG_INFO("Connection closed by client, socket %d", client.socket);
         closesocket(client.socket);
         client.socket = INVALID_SOCKET;
         return false;
@@ -242,7 +262,7 @@ bool webServer::HandleClientWrite(ClientInfo& client)
         int err = WSAGetLastError();
         if (err != WSAEWOULDBLOCK)
         {
-            printf("send failed: %d, closing socket %d\n", err, client.socket);
+            LOG_ERROR("send failed: %d, closing socket %d", err, client.socket);
             closesocket(client.socket);
             client.socket = INVALID_SOCKET;
             return false;
@@ -258,7 +278,7 @@ bool webServer::HandleClientWrite(ClientInfo& client)
         client.writeBuff.Reset();
         closesocket(client.socket);
         client.socket = INVALID_SOCKET;
-        printf("Response sent, connection closed\n");
+        LOG_ERROR("send response exception, connection closed");
         return false;
     }
     return true;
@@ -388,12 +408,14 @@ bool webServer::InitSocket()
     m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if (m_listenFd == INVALID_SOCKET)
     {
+        LOG_ERROR("port: %d ,create socket error!", m_port);
         return false;
     }
 
     ret = setsockopt(m_listenFd, SOL_SOCKET, SO_LINGER, (const char*)&optLinger, sizeof(optLinger));
     if (ret == SOCKET_ERROR)
     {
+        LOG_ERROR("init linger error!");
         closesocket(m_listenFd);
         return false;
     }
@@ -403,6 +425,7 @@ bool webServer::InitSocket()
     ret = setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(int));
     if (ret == SOCKET_ERROR)
     {
+        LOG_ERROR("set socket setsockopt error !");
         closesocket(m_listenFd);
         return false;
     }
@@ -411,6 +434,7 @@ bool webServer::InitSocket()
     ret = bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr));
     if (ret == SOCKET_ERROR)
     {
+        LOG_ERROR("bind port: %d error!", m_port);
         closesocket(m_listenFd);
         return false;
     }
@@ -419,6 +443,7 @@ bool webServer::InitSocket()
     ret = listen(m_listenFd, 6);
     if (ret == SOCKET_ERROR)
     {
+        LOG_ERROR("listen port: %d error!", m_port);
         closesocket(m_listenFd);
         return false;
     }

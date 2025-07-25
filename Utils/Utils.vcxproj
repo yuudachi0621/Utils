@@ -120,9 +120,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\thread;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\thread;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;$(SolutionDir)src\3rd\ghc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -152,16 +152,25 @@
     <ClCompile Include="..\src\3rd\easyloggingpp\easylogging++.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\src\FileUtil.cpp" />
     <ClCompile Include="..\src\log\log.cpp" />
     <ClCompile Include="..\src\stringUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\3rd\easyloggingpp\easylogging++.h" />
+    <ClInclude Include="..\src\3rd\ghc\filesystem.hpp" />
+    <ClInclude Include="..\src\3rd\ghc\fs_fwd.hpp" />
+    <ClInclude Include="..\src\3rd\ghc\fs_impl.hpp" />
+    <ClInclude Include="..\src\3rd\ghc\fs_std.hpp" />
+    <ClInclude Include="..\src\3rd\ghc\fs_std_fwd.hpp" />
+    <ClInclude Include="..\src\3rd\ghc\fs_std_impl.hpp" />
     <ClInclude Include="..\src\3rd\json\json.hpp" />
     <ClInclude Include="..\src\container\safeQueue.h" />
+    <ClInclude Include="..\src\FileUtil.h" />
     <ClInclude Include="..\src\log\log.h" />
     <ClInclude Include="..\src\pool\ThreadPool.h" />
     <ClInclude Include="..\src\stringUtil.h" />
+    <ClInclude Include="..\src\timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

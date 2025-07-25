@@ -28,6 +28,15 @@
     <Filter Include="头文件\container">
       <UniqueIdentifier>{a453ca5d-fb6d-4601-9f7d-71bd0177c936}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\file">
+      <UniqueIdentifier>{239d9889-bc67-4e97-9d22-8548744cc950}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\file\ghc">
+      <UniqueIdentifier>{72a1ed28-78cc-4293-ae89-cec08378f288}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\file">
+      <UniqueIdentifier>{c9170228-ab8a-45c1-9f26-2a718fbd64e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\log\log.cpp">
@@ -38,6 +47,9 @@
     </ClCompile>
     <ClCompile Include="..\src\stringUtil.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\FileUtil.cpp">
+      <Filter>源文件\file</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +70,30 @@
     </ClInclude>
     <ClInclude Include="..\src\pool\ThreadPool.h">
       <Filter>头文件\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\timer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\filesystem.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\fs_fwd.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\fs_impl.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\fs_std.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\fs_std_fwd.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\3rd\ghc\fs_std_impl.hpp">
+      <Filter>头文件\file\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\FileUtil.h">
+      <Filter>头文件\file</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

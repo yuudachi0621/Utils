@@ -4,9 +4,11 @@
 #include <atomic>
 
 #ifdef _MSC_VER
+
 #define NOMINMAX            // 禁用 min/max 宏
 #define WIN32_LEAN_AND_MEAN // 减少 Windows 头文件的冗余内容
 #include <WinSock2.h>
+#include <stdexcept>
 #pragma comment(lib, "ws2_32.lib")
 
 class WSAInit
@@ -17,7 +19,7 @@ public:
         WSADATA swaData;
         if (0 != WSAStartup(MAKEWORD(2, 2), &swaData))
         {
-            printf("WSAInit failed\n");
+            throw std::invalid_argument("WSAInit failed\n");
         }
     }
     ~WSAInit()
@@ -49,7 +51,9 @@ public:
         const char* sqlPwd,
         const char* dbName,
         int connPoolNum,
-        int threadNum);
+        int threadNum,
+        bool openLog = true,
+        int logLevel = 0);
 
     ~webServer();
 

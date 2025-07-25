@@ -1,21 +1,21 @@
 #include "sqlConnPool.h"
 
-sqlConnPool::sqlConnPool()
+util::sqlConnPool::sqlConnPool()
 {
 }
 
-sqlConnPool::~sqlConnPool()
+util::sqlConnPool::~sqlConnPool()
 {
     ClosePool();
 }
 
-sqlConnPool& sqlConnPool::Instance()
+util::sqlConnPool& util::sqlConnPool::Instance()
 {
     static sqlConnPool instance;
     return instance;
 }
 
-void sqlConnPool::Init(const std::string& host, int port, const std::string& user, const std::string& pwd, const std::string& dbName, int connSize)
+void util::sqlConnPool::Init(const std::string& host, int port, const std::string& user, const std::string& pwd, const std::string& dbName, int connSize)
 {
     for (int i = 0; i < connSize; i++)
     {
@@ -32,7 +32,7 @@ void sqlConnPool::Init(const std::string& host, int port, const std::string& use
     }
 }
 
-MYSQL* sqlConnPool::GetFreeConn()
+MYSQL* util::sqlConnPool::GetFreeConn()
 {
     if (m_connQue.empty())
         return nullptr;
@@ -43,18 +43,18 @@ MYSQL* sqlConnPool::GetFreeConn()
     return sqlPtr;
 }
 
-void sqlConnPool::FreeConn(MYSQL* conn)
+void util::sqlConnPool::FreeConn(MYSQL* conn)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_connQue.push(conn);
 }
 
-int sqlConnPool::GetFreeConnCount()
+int util::sqlConnPool::GetFreeConnCount()
 {
     return m_connQue.size();
 }
 
-void sqlConnPool::ClosePool()
+void util::sqlConnPool::ClosePool()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     while (!m_connQue.empty())

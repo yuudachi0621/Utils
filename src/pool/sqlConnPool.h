@@ -1,11 +1,11 @@
 #pragma once
 #include "safeQueue.h"
 #include <atomic>
+#include <mutex>
 #include <mysql.h>
 #include <string>
-#include <mutex>
 
-using namespace util;
+namespace util {
 
 class sqlConnPool
 {
@@ -34,3 +34,5 @@ private:
     SafeQueue<MYSQL*> m_connQue;
     std::mutex m_mutex;
 };
+
+} // namespace util
