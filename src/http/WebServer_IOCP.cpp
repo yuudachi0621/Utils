@@ -299,8 +299,11 @@ void WebServer_IOCP::HandleNewConnection(std::shared_ptr<ConnectionContext> cont
 
 void WebServer_IOCP::PostRead(std::shared_ptr<ConnectionContext> context)
 {
-    if (context->socket == INVALID_SOCKET)
+    if (!context || context->socket == INVALID_SOCKET)
         return;
+
+    // ÖØÖÃ overlapped
+    ZeroMemory(&context->overlapped, sizeof(OVERLAPPED));
 
     DWORD flags         = 0;
     context->wsaBuf.buf = context->readBuff.WritableBegin();
@@ -311,15 +314,18 @@ void WebServer_IOCP::PostRead(std::shared_ptr<ConnectionContext> context)
         if (error != WSA_IO_PENDING)
         {
             LOG_ERROR("WSARecv failed: %d", error);
-            closesocket(context->socket);
+            CloseConnection(context);
         }
     }
 }
 
 void WebServer_IOCP::PostWrite(std::shared_ptr<ConnectionContext> context)
 {
-    if (context->socket == INVALID_SOCKET)
+    if (!context || context->socket == INVALID_SOCKET)
         return;
+
+    // ÖØÖÃ overlapped
+    ZeroMemory(&context->overlapped, sizeof(OVERLAPPED));
 
     DWORD flags         = 0;
     context->wsaBuf.buf = (char*)context->writeBuff.GetValidData();
@@ -330,7 +336,7 @@ void WebServer_IOCP::PostWrite(std::shared_ptr<ConnectionContext> context)
         if (error != WSA_IO_PENDING)
         {
             LOG_ERROR("WSASend failed: %d", error);
-            closesocket(context->socket);
+            CloseConnection(context);
         }
     }
 }

@@ -16,7 +16,8 @@ void HttpConnect::ParseRequest(const std::string& message)
 std::string HttpConnect::GenerateResponse()
 {
     m_response.Init(&m_state);
-    return m_response.GetResponseMessage();
+    m_response.HandleRequest();
+    return m_response.BuildResponse();
 }
 
 bool HttpConnect::IsKeepAlive() const

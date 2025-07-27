@@ -30,10 +30,20 @@ struct HttpRequestState
 
 struct HttpResponseState
 {
-    std::string respVersion; // HTTP版本
-    int respCode;            // 状态码
-    std::string respPath;    // 响应资源路径
-    std::string respContent; // 响应体
+    std::string respVersion = "HTTP/1.1";                     // HTTP版本
+    int respCode            = 200;                            // 状态码
+    std::string respPath;                                     // 响应资源路径
+    std::unordered_map<std::string, std::string> respHeaders; // 动态头部
+    std::string content;
+
+    void reset()
+    {
+        respVersion = "HTTP/1.1";
+        respCode    = 200;
+        respPath.clear();
+        respHeaders.clear();
+        content.clear();
+    }
 };
 
 const std::unordered_set<std::string> g_localHTML_Map = {
@@ -73,6 +83,7 @@ const std::unordered_map<std::string, std::string> g_contentTypeMap = {
     {".avi", "video/x-msvideo"},
     {".gz", "application/x-gzip"},
     {".tar", "application/x-tar"},
-    {".css", "text/css "},
-    {".js", "text/javascript "},
+    {".css", "text/css"},
+    {".js", "text/javascript"},
+    {".json", "application/json"},
 };
