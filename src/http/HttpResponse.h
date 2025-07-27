@@ -9,7 +9,7 @@
 class HttpResponse
 {
 public:
-    void Init(HttpRequestState* state);
+    void Init(HttpRequestState* request);
     std::string BuildResponse();
     int GetStatusCode() const;
 
@@ -34,10 +34,10 @@ private:
 
     void PrepareCommonHeaders();
     std::string GetCurrentHttpDate() const;
-    std::string GetMimeType(const std::string& path);
+    std::string GetMimeType(const std::string& path) const;
 
 private:
-    MMapFile m_mmf;                // 文件映射
-    HttpRequestState* m_reqState;  // 请求信息
-    HttpResponseState m_respState; // 响应信息
+    MMapFile m_mmf;                        // 文件映射
+    HttpRequestState* m_request = nullptr; // 请求信息
+    HttpResponseState m_response;          // 响应信息
 };

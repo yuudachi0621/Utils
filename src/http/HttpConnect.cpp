@@ -5,7 +5,7 @@ using namespace util;
 
 void HttpConnect::ParseRequest(const std::string& message)
 {
-    m_state.reqComleteMessage = message;
+    m_state.comleteMessage = message;
     m_request.Init(&m_state);
     if (!m_request.Parser())
     {
@@ -22,5 +22,5 @@ std::string HttpConnect::GenerateResponse()
 
 bool HttpConnect::IsKeepAlive() const
 {
-    return m_state.reqIsKeepAlive;
+    return m_state.keep_alive;
 }

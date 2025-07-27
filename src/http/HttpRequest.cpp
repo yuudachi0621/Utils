@@ -11,7 +11,7 @@ void HttpRequest::Init(HttpRequestState* state)
 
 bool HttpRequest::Parser()
 {
-    std::vector<std::string> reqVec = StringUtil::Split(m_state->reqComleteMessage, "\r\n");
+    std::vector<std::string> reqVec = StringUtil::Split(m_state->comleteMessage, "\r\n");
     if (reqVec.size() < 3)
         return false;
 
@@ -29,35 +29,35 @@ bool HttpRequest::Parser()
 
 std::string HttpRequest::GetReqPath() const
 {
-    return m_state->reqPath;
+    return m_state->path;
 }
 
 std::string HttpRequest::GetBody() const
 {
-    return m_state->reqBody;
+    return m_state->body;
 }
 
 bool HttpRequest::IsKeepAlive() const
 {
-    if (m_state->reqHeaders.count("connection") == 1)
+    if (m_state->headers.count("connection") == 1)
     {
-        if (m_state->reqHeaders.find("connection")->second == "keep-alive")
+        if (m_state->headers.find("connection")->second == "keep-alive")
         {
-            m_state->reqIsKeepAlive = true;
+            m_state->keep_alive = true;
             return true;
         }
-        m_state->reqIsKeepAlive = false;
+        m_state->keep_alive = false;
         return false;
     }
 }
 std::string HttpRequest::GetMethod() const
 {
-    return m_state->reqMethod;
+    return m_state->method;
 }
 
 std::string HttpRequest::GetVersion() const
 {
-    return m_state->reqVersion;
+    return m_state->version;
 }
 
 bool HttpRequest::ParserQuestLine(const std::string& line)
@@ -66,9 +66,9 @@ bool HttpRequest::ParserQuestLine(const std::string& line)
     std::smatch subMatch;
     if (regex_match(line, subMatch, patten))
     {
-        m_state->reqMethod = subMatch[1];
-        m_state->reqPath   = subMatch[2];
-        m_state->reqVersion   = subMatch[3];
+        m_state->method  = subMatch[1];
+        m_state->path    = subMatch[2];
+        m_state->version = subMatch[3];
         return true;
     }
     LOG_ERROR("Parse Request Line Error");
@@ -99,13 +99,13 @@ bool HttpRequest::ParserQuestHeader(const std::vector<std::string>& headers)
         size_t end             = value_view.find_last_not_of(" \t\r\n");
         std::string value      = (start == std::string::npos) ? "" : std::string(value_view.substr(start, end - start + 1));
 
-        if (m_state->reqHeaders.count(key))
+        if (m_state->headers.count(key))
         {
-            m_state->reqHeaders[key] += ", " + value;
+            m_state->headers[key] += ", " + value;
         }
         else
         {
-            m_state->reqHeaders[key] = value;
+            m_state->headers[key] = value;
         }
     }
 
@@ -116,6 +116,6 @@ bool HttpRequest::ParserQuestHeader(const std::vector<std::string>& headers)
 
 bool HttpRequest::ParserBody(const std::string& body)
 {
-    m_state->reqBody = body;
+    m_state->body = body;
     return true;
 }
