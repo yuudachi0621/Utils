@@ -5,6 +5,14 @@ VariableBuffer::VariableBuffer(int initBufferSize)
 {
 }
 
+VariableBuffer::~VariableBuffer()
+{
+    std::vector<char> empty;
+    std::swap(m_buffer, empty);
+    m_readPos  = 0;
+    m_writePos = 0;
+}
+
 size_t VariableBuffer::InvalidLength() const
 {
     return m_readPos;

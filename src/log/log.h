@@ -49,8 +49,8 @@ private:
     int m_lineCount;      // 行数
     int m_level;          // 日志等级
 
-    bool m_isAsync;             // 是否异步
-    std::atomic<bool> m_isOpen; // 是否可写
+    bool m_isAsync;                // 是否异步
+    std::atomic<bool> m_isRunning; // 是否运行
 
     FILE* m_fp;
     std::mutex m_mtx;
@@ -62,7 +62,7 @@ private:
 template <typename... Args>
 void Log::WriteLog(int level, const std::string& format, Args... args)
 {
-    if (!m_isOpen)
+    if (!m_isRunning)
         return;
 
     // 检查时间和行数

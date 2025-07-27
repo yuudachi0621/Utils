@@ -9,13 +9,13 @@ Log::Log()
     m_lineCount = 0;
     m_level     = 0;
     m_isAsync   = false;
-    m_isOpen    = false;
+    m_isRunning = false;
     m_fp        = nullptr;
 }
 
 Log::~Log()
 {
-    m_isOpen = false;
+    m_isRunning = false;
     if (m_isAsync)
     {
         while (!m_queue.empty())
@@ -48,9 +48,9 @@ void Log::FlushLogThread()
 
 bool Log::Init(int level, const std::string& path, const std::string& suffix, bool isAsync)
 {
-    m_level   = level;
-    m_isOpen  = true;
-    m_isAsync = isAsync;
+    m_level     = level;
+    m_isRunning = true;
+    m_isAsync   = isAsync;
 
     m_path                  = path;
     m_suffix                = suffix;
@@ -105,7 +105,7 @@ void Log::SetLevel(int level)
 
 bool Log::IsOpen() const
 {
-    return m_isOpen;
+    return m_isRunning;
 }
 
 void Log::AppendLogLevelTitle(int level)

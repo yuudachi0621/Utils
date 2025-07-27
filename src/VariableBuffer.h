@@ -6,7 +6,7 @@ class VariableBuffer
 {
 public:
     VariableBuffer(int initBufferSize = 1024);
-    ~VariableBuffer() = default;
+    ~VariableBuffer();
 
     // 过期数据长度
     size_t InvalidLength() const;
@@ -24,6 +24,12 @@ public:
     // 添加数据
     void Append(const char* str, size_t len);
 
+    // 有效可读地址
+    char* ReadableBegin();
+
+    // 有效可写地址
+    char* WritableBegin();
+
     // 偏移
     void AddReadPos(size_t len);
     void AddWritePos(size_t len);
@@ -34,12 +40,6 @@ private:
     char* BeginPtr();
 
     const char* BeginPtr() const;
-
-    // 有效可读地址
-    char* ReadableBegin();
-
-    // 有效可写地址
-    char* WritableBegin();
 
     // 确保写入长度有效
     void EnsureWriteable(size_t len);

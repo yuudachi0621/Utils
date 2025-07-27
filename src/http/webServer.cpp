@@ -1,4 +1,5 @@
 #include "webServer.h"
+#include "HttpConnect.h"
 #include "log.h"
 #include "sqlConnPool.h"
 #include "stringUtil.h"
@@ -27,7 +28,7 @@ webServer::webServer(int port, bool OptLinger, int sqlPort, const char* sqlUser,
         LOG_INFO("========== Server init ==========");
         LOG_INFO("Port:%d, OpenLinger: %s", m_port, m_openLiger ? "true" : "false");
         LOG_INFO("Log Level: %d", logLevel);
-        LOG_INFO("SrcDir: %s", m_srcPath.data());
+        LOG_INFO("resourcePath: %s", g_resourcePath.data());
         LOG_INFO("Connect database: %s", dbName);
         LOG_INFO("SqlConnPool num: %d, ThreadPool num: %d", connPoolNum, threadNum);
     }
@@ -60,7 +61,7 @@ void webServer::Start()
     // 主循环
     while (true)
     {
-        timeout.tv_sec  = 0; // 每次循环重置timeout, 1秒
+        timeout.tv_sec  = 0; // 每次循环重置timeout, 0秒
         timeout.tv_usec = 0;
 
         // 添加一个元素
@@ -120,23 +121,10 @@ void webServer::Start()
 
 void webServer::ProcessHttpRequest(ClientInfo& client)
 {
-    // 获取当前时间
-    char timeStr[64] = {0};
-    if (!GetNowTime(timeStr, sizeof(timeStr)))
-    {
-        SendErrorResponse(client, 500, "Failed to get server time");
-        return;
-    }
-
-    // 获取客户端IP
-    char ipStr[22] = {0};
-    if (!GetClientIP(client.socket, ipStr, sizeof(ipStr)))
-    {
-        SendErrorResponse(client, 500, "Failed to get client IP");
-        return;
-    }
-    // 生成响应内容
-    GenerateHttpResponse(client, timeStr, ipStr);
+    HttpConnect hconn;
+    hconn.ParseRequest(client.readBuff.GetValidDataToStr());
+    std::string httpResponse = hconn.GenerateResponse();
+    client.writeBuff.Append(httpResponse.data(), httpResponse.size());
 }
 
 void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex& clientsMutex)
@@ -245,6 +233,7 @@ bool webServer::HandleClientRead(ClientInfo& client)
         auto ret = m_threadPool->enqueue([this, &client]() {
             ProcessHttpRequest(client);
             client.needWrite = true;
+            client.readBuff.Reset();
         });
     }
     return true;
@@ -281,6 +270,11 @@ bool webServer::HandleClientWrite(ClientInfo& client)
         LOG_ERROR("send response exception, connection closed");
         return false;
     }
+    else if (client.writeBuff.ValidLength() == 0) // 写入完成
+    {
+        client.needWrite = false;
+        client.writeBuff.Reset();
+    }
     return true;
 }
 
@@ -295,93 +289,31 @@ void webServer::CleanupClients(std::vector<ClientInfo>& clients)
     }
 }
 
-void webServer::SendErrorResponse(ClientInfo& client, int code, const char* message)
+std::string webServer::GetClientIP(SOCKET socket)
 {
-    const char* errorResponse =
-        "HTTP/1.1 %d Error\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: %d\r\n"
-        "Connection: close\r\n"
-        "\r\n"
-        "%s";
+    // 获取客户端IP
+    char Buffer[22] = {0};
 
-    int messageLength = strlen(message);
-    int headerLength  = snprintf(nullptr, 0, errorResponse, code, messageLength);
-    int totalLength   = headerLength + messageLength;
-
-    if (totalLength >= TEMP_BUFFER_SIZE)
-    {
-        // 如果错误响应也太大，使用最小错误响应
-        const char* minimalError =
-            "HTTP/1.1 500 Error\r\n"
-            "Content-Length: 0\r\n"
-            "Connection: close\r\n"
-            "\r\n";
-
-        client.writeBuff.Append(minimalError, strlen(minimalError));
-    }
-    else
-    {
-        std::string errResp = util::StringUtil::Format(errorResponse, code, messageLength, message);
-        client.writeBuff.Append(errResp.data(), errResp.size());
-    }
-}
-
-void webServer::GenerateHttpResponse(ClientInfo& client, const char* timeStr, const char* ipStr)
-{
-    // 计算响应体长度
-    const char bodyFormat[] =
-        "<html><body>"
-        "<h1>Hello, World!</h1>"
-        "<p>Server Time: %s</p>"
-        "<p>Your IP: %s</p>"
-        "</body></html>";
-
-    // 构建响应头
-    const char headerFormat[] =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %d\r\n"
-        "Connection: close\r\n"
-        "\r\n";
-
-    int bodyLength = snprintf(nullptr, 0, bodyFormat, timeStr, ipStr);
-
-    std::string responseData = util::StringUtil::Format(headerFormat, bodyLength);
-    responseData += util::StringUtil::Format(bodyFormat, timeStr, ipStr);
-
-    client.writeBuff.Append(responseData.data(), responseData.size());
-}
-
-bool webServer::GetClientIP(SOCKET socket, char* Buffer, size_t bufferSize)
-{
     sockaddr_in addr = {0};
     int addrLen      = sizeof(addr);
 
     if (getpeername(socket, (sockaddr*)&addr, &addrLen) == SOCKET_ERROR)
     {
-        return false;
+        return "";
     }
 
-    DWORD ipStrLength = static_cast<DWORD>(bufferSize);
-    return WSAAddressToStringA(
-               (LPSOCKADDR)&addr,
-               sizeof(addr),
-               NULL,
-               Buffer,
-               &ipStrLength)
-           == 0;
-}
-
-bool webServer::GetNowTime(char* Buffer, size_t bufferSize)
-{
-    time_t now = time(nullptr);
-    if (now == -1) return false;
-
-    struct tm tm;
-    if (localtime_s(&tm, &now)) return false;
-
-    return strftime(Buffer, bufferSize, "%Y-%m-%d %H:%M:%S", &tm) > 0;
+    DWORD ipStrLength = static_cast<DWORD>(sizeof(Buffer));
+    if (WSAAddressToStringA(
+            (LPSOCKADDR)&addr,
+            sizeof(addr),
+            NULL,
+            Buffer,
+            &ipStrLength)
+        == 0)
+    {
+        return std::string(Buffer, sizeof(Buffer));
+    }
+    return "";
 }
 
 bool webServer::InitSocket()

@@ -27,7 +27,16 @@
     <ClCompile Include="..\src\pool\sqlConnPool.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\http\httpParser.cpp">
+    <ClCompile Include="..\src\http\HttpConnect.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\HttpRequest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\HttpResponse.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\WebServer_IOCP.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +53,25 @@
     <ClInclude Include="..\src\pool\sqlConnPool.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\http\httpParser.h">
+    <ClInclude Include="..\src\http\HttpResponse.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpRequest.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpConnect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MMapFile.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\WebServer_IOCP.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\WinNetworkDef.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpDefine.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

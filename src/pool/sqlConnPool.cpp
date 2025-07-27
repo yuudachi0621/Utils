@@ -1,4 +1,5 @@
 #include "sqlConnPool.h"
+#include "log.h"
 
 util::sqlConnPool::sqlConnPool()
 {
@@ -23,10 +24,14 @@ void util::sqlConnPool::Init(const std::string& host, int port, const std::strin
         sqlPtr        = mysql_init(sqlPtr);
         if (sqlPtr == nullptr)
         {
+            LOG_ERROR("mysql init %d error!", i);
+            continue;
         }
         sqlPtr = mysql_real_connect(sqlPtr, host.data(), user.data(), pwd.data(), dbName.data(), port, nullptr, 0);
         if (sqlPtr == nullptr)
         {
+            LOG_ERROR("mysql real connect %d error!", i);
+            continue;
         }
         m_connQue.push(sqlPtr);
     }
@@ -35,7 +40,10 @@ void util::sqlConnPool::Init(const std::string& host, int port, const std::strin
 MYSQL* util::sqlConnPool::GetFreeConn()
 {
     if (m_connQue.empty())
+    {
+        LOG_WARN("free sql connection is empty, so busy!");
         return nullptr;
+    }
 
     std::lock_guard<std::mutex> lock(m_mutex);
     MYSQL* sqlPtr = nullptr;

@@ -1,33 +1,8 @@
 #pragma once
 #include "VariableBuffer.h"
+#include "WinNetworkDef.h"
 #include "threadPool.h"
 #include <atomic>
-
-#ifdef _MSC_VER
-
-#define NOMINMAX            // 禁用 min/max 宏
-#define WIN32_LEAN_AND_MEAN // 减少 Windows 头文件的冗余内容
-#include <WinSock2.h>
-#include <stdexcept>
-#pragma comment(lib, "ws2_32.lib")
-
-class WSAInit
-{
-public:
-    WSAInit()
-    {
-        WSADATA swaData;
-        if (0 != WSAStartup(MAKEWORD(2, 2), &swaData))
-        {
-            throw std::invalid_argument("WSAInit failed\n");
-        }
-    }
-    ~WSAInit()
-    {
-        WSACleanup();
-    }
-};
-#endif
 
 static constexpr auto TEMP_BUFFER_SIZE = 4096;
 typedef struct ClientInfo
@@ -77,14 +52,7 @@ private:
 
     void CleanupClients(std::vector<ClientInfo>& clients);
 
-    void GenerateHttpResponse(ClientInfo& client, const char* timeStr, const char* ipStr);
-
-    void SendErrorResponse(ClientInfo& client, int code, const char* message);
-
-    bool GetClientIP(SOCKET socket, char* Buffer, size_t bufferSize);
-
-private:
-    bool GetNowTime(char* Buffer, size_t bufferSize);
+    std::string GetClientIP(SOCKET socket);
 
 private:
 #ifdef _MSC_VER
@@ -94,9 +62,6 @@ private:
     int m_port;       // Server监听端口
     int m_listenFd;   // Server Fd
     bool m_openLiger; // 优雅关闭
-    bool m_isClose;   // Server是否关闭
-
-    std::string m_srcPath; // 资源存放路径
 
     std::unique_ptr<util::ThreadPool> m_threadPool; // 线程池
 };
