@@ -8,10 +8,9 @@
 
 struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext>
 {
-    ConnectionContext()
-        : socket(INVALID_SOCKET), isReadPending(false), readBuff(4096), writeBuff(4096)
+    static std::shared_ptr<ConnectionContext> Create()
     {
-        ZeroMemory(&overlapped, sizeof(OVERLAPPED));
+        return std::shared_ptr<ConnectionContext>(new ConnectionContext());
     }
 
     ~ConnectionContext()
@@ -20,13 +19,20 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
             closesocket(socket);
     }
 
-    OVERLAPPED overlapped; // 异步 I/O操作的基础结构
-    WSABUF wsaBuf;         // 异步 I/O 操作的数据缓冲区
-    bool isReadPending;    // 当前连接的操作状态
+    OVERLAPPED overlapped;      // 异步 I/O操作的基础结构
+    WSABUF wsaBuf;              // 异步 I/O 操作的数据缓冲区
+    bool isReadPending = false; // 当前连接的操作状态
 
-    SOCKET socket;
+    SOCKET socket = INVALID_SOCKET;
     VariableBuffer readBuff;
     VariableBuffer writeBuff;
+
+private:
+    ConnectionContext() // 禁止外部构造
+        : socket(INVALID_SOCKET), isReadPending(false), readBuff(4096), writeBuff(4096)
+    {
+        ZeroMemory(&overlapped, sizeof(OVERLAPPED));
+    }
 };
 
 class WebServer_IOCP
@@ -82,4 +88,5 @@ private:
 
     std::unique_ptr<util::ThreadPool> m_threadPool;                             // 线程池
     std::unordered_set<std::shared_ptr<ConnectionContext>> m_activeConnections; // 全局连接表
+    std::mutex m_connectionsMutex;                                              // 互斥锁
 };

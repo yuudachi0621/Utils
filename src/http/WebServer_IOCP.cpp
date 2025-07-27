@@ -165,16 +165,31 @@ void WebServer_IOCP::WorkerThread()
         LPOVERLAPPED overlapped = nullptr;
 
         // 获取完成事件
-        BOOL result = GetQueuedCompletionStatus(
-            m_iocpHandle,
-            &bytesTransferred,
-            &completionKey,
-            &overlapped,
-            INFINITE);
+        BOOL result = GetQueuedCompletionStatus(m_iocpHandle, &bytesTransferred, &completionKey, &overlapped, INFINITE);
+        if (!overlapped)
+        {
+            LOG_ERROR("Null overlapped in completion event");
+            continue;
+        }
 
         // 通过 overlapped 从成员地址反推结构体地址
-        ConnectionContext* rawContext              = CONTAINING_RECORD(overlapped, ConnectionContext, overlapped);
-        std::shared_ptr<ConnectionContext> context = rawContext->shared_from_this();
+        ConnectionContext* rawContext = CONTAINING_RECORD(overlapped, ConnectionContext, overlapped);
+        std::shared_ptr<ConnectionContext> context;
+        {
+            std::lock_guard<std::mutex> lock(m_connectionsMutex);
+            auto it = std::find_if(m_activeConnections.begin(),
+                                   m_activeConnections.end(),
+                                   [rawContext](const auto& ptr) { return ptr.get() == rawContext; });
+            if (it != m_activeConnections.end())
+            {
+                context = *it;
+            }
+            else
+            {
+                LOG_ERROR("ConnectionContext not found!");
+                continue;
+            }
+        }
 
         if (!result)
         {
@@ -256,14 +271,17 @@ void WebServer_IOCP::ProcessHttpRequest(std::shared_ptr<ConnectionContext> conte
 void WebServer_IOCP::PostAccept()
 {
     // 创建新连接上下文
-    auto context = std::make_shared<ConnectionContext>();
-    m_activeConnections.insert(context); // 防止提前释放
+    auto context = ConnectionContext::Create();
+    {
+        std::lock_guard<std::mutex> lock(m_connectionsMutex);
+        m_activeConnections.insert(context); // 防止提前释放
+    }
 
     ZeroMemory(&context->overlapped, sizeof(OVERLAPPED));
     context->socket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 
     // 使用AcceptEx接收连接
-    char acceptBuffer[64] = {0}; // 用于接收地址信息
+    char acceptBuffer[sizeof(sockaddr_in) * 2 + 32] = {0}; // 用于接收地址信息
     if (!AcceptEx(m_listenFd,
                   context->socket,
                   acceptBuffer,
@@ -275,6 +293,7 @@ void WebServer_IOCP::PostAccept()
     {
         if (WSAGetLastError() != ERROR_IO_PENDING)
         {
+            std::lock_guard<std::mutex> lock(m_connectionsMutex);
             m_activeConnections.erase(context);
             LOG_ERROR("AcceptEx failed: %d", GetLastError());
         }
@@ -321,8 +340,11 @@ void WebServer_IOCP::PostRead(std::shared_ptr<ConnectionContext> context)
 
 void WebServer_IOCP::PostWrite(std::shared_ptr<ConnectionContext> context)
 {
-    if (!context || context->socket == INVALID_SOCKET)
+    if (!context || context->socket == INVALID_SOCKET
+        || context->writeBuff.ValidLength() == 0)
+    {
         return;
+    }
 
     // 重置 overlapped
     ZeroMemory(&context->overlapped, sizeof(OVERLAPPED));
@@ -343,11 +365,16 @@ void WebServer_IOCP::PostWrite(std::shared_ptr<ConnectionContext> context)
 
 void WebServer_IOCP::CloseConnection(std::shared_ptr<ConnectionContext> context)
 {
-    if (context->socket != INVALID_SOCKET)
+    if (!context) return;
+
     {
-        LOG_INFO("Connection closed, socket: %d", context->socket);
-        closesocket(context->socket);
-        context->socket = INVALID_SOCKET;
+        std::lock_guard<std::mutex> lock(m_connectionsMutex);
+        if (context->socket != INVALID_SOCKET)
+        {
+            LOG_INFO("Connection closed, socket: %d", context->socket);
+            closesocket(context->socket);
+            context->socket = INVALID_SOCKET;
+        }
+        m_activeConnections.erase(context); // 移除引用
     }
-    m_activeConnections.erase(context); // 移除引用
 }
