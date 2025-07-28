@@ -86,7 +86,7 @@ void HttpResponse::SendFile(const std::string& path)
     m_mmf.Init(path);
     m_response.content = std::string(m_mmf.data(), m_mmf.size());
     AddHeader("Content-Type", GetMimeType(path));
-    AddHeader("Content-Length", std::to_string(m_mmf.size()));
+    AddHeader("Content-Length", std::to_string(m_response.content.size()));
 }
 
 void HttpResponse::SendError(int code, const std::string& message)

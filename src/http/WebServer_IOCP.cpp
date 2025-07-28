@@ -12,9 +12,8 @@ using namespace util;
 
 WebServer_IOCP::WebServer_IOCP(int port, bool OptLinger, int sqlPort, const char* sqlUser, const char* sqlPwd, const char* dbName, int connPoolNum, int threadNum, bool openLog, int logLevel)
 {
-    m_port       = port;
-    m_openLiger  = OptLinger;
-    m_threadPool = std::make_unique<util::ThreadPool>(threadNum);
+    m_port      = port;
+    m_openLiger = OptLinger;
     sqlConnPool::Instance().Init("127.0.0.1", sqlPort, sqlUser, sqlPwd, dbName, connPoolNum);
 
     if (openLog)
@@ -42,6 +41,10 @@ WebServer_IOCP::WebServer_IOCP(int port, bool OptLinger, int sqlPort, const char
 WebServer_IOCP::~WebServer_IOCP()
 {
     m_isRunning = false;
+    for (auto& t : m_workerThreads)
+    {
+        if (t.joinable()) t.join();
+    }
     CloseHandle(m_iocpHandle);
     closesocket(m_listenFd);
 }
@@ -149,9 +152,10 @@ bool WebServer_IOCP::InitIOCP(int threadNum)
 
     // 创建工作线程
     unsigned int threadCount = std::min(std::thread::hardware_concurrency() * 2, static_cast<unsigned int>(threadNum));
+    m_workerThreads.reserve(threadCount);
     for (unsigned int i = 0; i < threadCount; ++i)
     {
-        m_threadPool->enqueue(&WebServer_IOCP::WorkerThread, this);
+        m_workerThreads.emplace_back(&WebServer_IOCP::WorkerThread, this);
     }
     return true;
 }

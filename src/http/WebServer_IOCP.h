@@ -19,9 +19,9 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
             closesocket(socket);
     }
 
-    OVERLAPPED overlapped;      // 异步 I/O操作的基础结构
-    WSABUF wsaBuf;              // 异步 I/O 操作的数据缓冲区
-    bool isReadPending = false; // 当前连接的操作状态
+    OVERLAPPED overlapped;                   // 异步 I/O操作的基础结构
+    WSABUF wsaBuf;                           // 异步 I/O 操作的数据缓冲区
+    std::atomic<bool> isReadPending = false; // 当前连接的操作状态
 
     SOCKET socket = INVALID_SOCKET;
     VariableBuffer readBuff;
@@ -29,7 +29,7 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
 
 private:
     ConnectionContext() // 禁止外部构造
-        : socket(INVALID_SOCKET), isReadPending(false), readBuff(1024 * 4), writeBuff(1024 * 6)
+        : socket(INVALID_SOCKET), isReadPending(false), readBuff(1024 * 8), writeBuff(1024 * 8)
     {
         ZeroMemory(&overlapped, sizeof(OVERLAPPED));
     }
@@ -86,7 +86,7 @@ private:
     bool m_openLiger; // 优雅关闭
     bool m_isRunning; // Server是否运行
 
-    std::unique_ptr<util::ThreadPool> m_threadPool;                             // 线程池
+    std::vector<std::thread> m_workerThreads;
     std::unordered_set<std::shared_ptr<ConnectionContext>> m_activeConnections; // 全局连接表
     std::mutex m_connectionsMutex;                                              // 互斥锁
 };
