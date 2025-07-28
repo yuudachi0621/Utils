@@ -1,16 +1,17 @@
-#include <iostream>
-#include <chrono>
-#include "ThreadPool.h"
-
-void testThreadPool()
-{
-    util::ThreadPool pool(4);
-    auto result = pool.enqueue([](int answer) { return answer; }, 42);
-    std::cout << result.get() << std::endl;
-}
+#include "WebServer_IOCP.h"
+#include <algorithm>
 
 int main()
 {
-    testThreadPool();
+    WebServer_IOCP server(
+        1315,
+        false,
+        3306,
+        "remote",
+        "remote",
+        "yourdb",
+        1,
+        1);
+    server.Start();
     return 0;
 }
