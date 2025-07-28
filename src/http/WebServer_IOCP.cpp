@@ -203,25 +203,30 @@ void WebServer_IOCP::WorkerThread()
         if (!result)
         {
             DWORD error = GetLastError();
-            if (overlapped != nullptr)
+            if (error == WAIT_TIMEOUT)
             {
-                // 连接出错
-                LOG_ERROR("IOCP operation failed: %d", error);
-                CloseConnection(context);
+                continue;
             }
+
+            // 处理常见错误
+            if (error == ERROR_NETNAME_DELETED || error == WSAECONNRESET || error == WSAECONNABORTED)
+            {
+                CloseConnection(context);
+                continue;
+            }
+            LOG_ERROR("IOCP operation failed: %d", error);
+            CloseConnection(context);
             continue;
         }
 
-        if (completionKey == kAcceptKey)
+        if (completionKey == kAcceptKey) // 新连接到达
         {
-            // 新连接到达
             HandleNewConnection(context);
             LOG_INFO("New connection: socket %d", context->socket);
         }
-        else if (completionKey == kConnKey)
+        else if (completionKey == kConnKey) // 已建立连接的操作完成
         {
-            // 已建立连接的操作完成
-            if (context->isReadPending)
+            if (context->isReadPending) // 读
             {
                 if (bytesTransferred == 0)
                 {
@@ -237,10 +242,10 @@ void WebServer_IOCP::WorkerThread()
                     PostRead(context);
                 }
             }
-            else
+            else // 写
             {
-                // 写入完成
                 context->writeBuff.AddReadPos(bytesTransferred);
+
                 if (context->writeBuff.ValidLength() > 0)
                 {
                     PostWrite(context); // 还有数据要写
@@ -266,18 +271,33 @@ void WebServer_IOCP::ProcessClientData(std::shared_ptr<ConnectionContext> contex
         if (util::StringUtil::Find(context->readBuff.GetValidData(), context->readBuff.ValidLength(), "\r\n\r\n", strlen("\r\n\r\n")) != nullptr)
         {
             ProcessHttpRequest(context);
-            PostWrite(context);
         }
     }
 }
 
 void WebServer_IOCP::ProcessHttpRequest(std::shared_ptr<ConnectionContext> context)
 {
-    HttpConnect hconn;
-    hconn.ParseRequest(context->readBuff.GetValidDataToStr());
-    std::string httpResponse = hconn.GenerateResponse();
-    context->writeBuff.Append(httpResponse.data(), httpResponse.size());
+    // 立即标记为非读取状态，防止新数据干扰
     context->isReadPending = false;
+
+    // 使用线程池处理HTTP请求
+    m_threadPool->enqueue([this, self = context->shared_from_this()]() {
+        HttpConnect hconn;
+        hconn.ParseRequest(self->readBuff.GetValidDataToStr());
+        std::string httpResponse = hconn.GenerateResponse();
+
+        {
+            std::lock_guard<std::mutex> lock(m_connectionsMutex);
+            // 检查连接是否已关闭
+            if (self->socket == INVALID_SOCKET)
+                return;
+
+            self->writeBuff.Append(httpResponse.data(), httpResponse.size());
+        }
+
+        // 确保在锁外调用IO操作
+        PostWrite(self);
+    });
 }
 
 void WebServer_IOCP::PostAccept()
@@ -363,10 +383,8 @@ void WebServer_IOCP::PostRead(std::shared_ptr<ConnectionContext> context)
 
 void WebServer_IOCP::PostWrite(std::shared_ptr<ConnectionContext> context)
 {
-    if (!context || context->socket == INVALID_SOCKET || context->writeBuff.ValidLength() == 0)
-    {
+    if (!context || context->socket == INVALID_SOCKET)
         return;
-    }
 
     ZeroMemory(&context->overlapped, sizeof(OVERLAPPED)); // 重置 overlapped
 
@@ -388,8 +406,12 @@ void WebServer_IOCP::CloseConnection(std::shared_ptr<ConnectionContext> context)
 {
     if (!context) return;
 
-    std::lock_guard<std::mutex> lock(m_connectionsMutex);
-    m_activeConnections.erase(context); // 移除引用
+    if (context->socket == INVALID_SOCKET)
+        return;
 
+    {
+        std::lock_guard<std::mutex> lock(m_connectionsMutex);
+        m_activeConnections.erase(context);
+    }
     context->SafeClose();
 }

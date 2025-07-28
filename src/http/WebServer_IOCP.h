@@ -40,7 +40,7 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
 
 private:
     ConnectionContext() // 禁止外部构造
-        : socket(INVALID_SOCKET), isReadPending(false), readBuff(1024 * 8), writeBuff(1024 * 8)
+        : socket(INVALID_SOCKET), isReadPending(false), readBuff(1024 * 64), writeBuff(1024 * 64)
     {
         ZeroMemory(&overlapped, sizeof(OVERLAPPED));
     }
