@@ -35,8 +35,9 @@ const char* VariableBuffer::GetValidData() const
 
 std::string VariableBuffer::GetValidDataToStr() const
 {
-    std::string result(GetValidData(), ValidLength());
-    return result;
+    size_t len = ValidLength();
+    if (len == 0) return "";
+    return std::string(GetValidData(), len);
 }
 
 void VariableBuffer::Append(const char* str, size_t len)
@@ -104,4 +105,14 @@ void VariableBuffer::ResizeSpace(size_t len)
         m_readPos  = 0;
         m_writePos = validLen;
     }
+}
+
+void VariableBuffer::compact()
+{
+    if (m_readPos == 0) return;
+
+    size_t readable = ValidLength();
+    memmove(&m_buffer[0], &m_buffer[m_readPos], readable);
+    m_readPos  = 0;
+    m_writePos = readable;
 }

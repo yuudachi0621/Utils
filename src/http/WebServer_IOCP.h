@@ -3,6 +3,7 @@
 #include "WinNetworkDef.h"
 #include "threadPool.h"
 #include <atomic>
+#include <memory>
 #include <thread>
 #include <unordered_set>
 
@@ -13,15 +14,25 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
         return std::shared_ptr<ConnectionContext>(new ConnectionContext());
     }
 
-    ~ConnectionContext()
+    void SafeClose()
     {
         if (socket != INVALID_SOCKET)
-            closesocket(socket);
+        {
+            ::shutdown(socket, SD_BOTH);
+            ::closesocket(socket);
+            socket = INVALID_SOCKET;
+        }
     }
 
-    OVERLAPPED overlapped;                   // 异步 I/O操作的基础结构
-    WSABUF wsaBuf;                           // 异步 I/O 操作的数据缓冲区
-    std::atomic<bool> isReadPending = false; // 当前连接的操作状态
+    ~ConnectionContext()
+    {
+        SafeClose();
+    }
+
+    OVERLAPPED overlapped;                  // 异步 I/O操作的基础结构
+    WSABUF wsaBuf;                          // 异步 I/O 操作的数据缓冲区
+    std::atomic<bool> isReadPending{false}; // 当前连接的操作状态
+    char acceptBuffer[sizeof(sockaddr_in) * 2 + 32]{0};
 
     SOCKET socket = INVALID_SOCKET;
     VariableBuffer readBuff;
@@ -33,6 +44,12 @@ private:
     {
         ZeroMemory(&overlapped, sizeof(OVERLAPPED));
     }
+};
+
+enum IocpKey : ULONG_PTR
+{
+    kAcceptKey = 1,
+    kConnKey   = 2
 };
 
 class WebServer_IOCP
@@ -56,7 +73,7 @@ public:
 private:
     bool InitSocket();
 
-    bool InitIOCP(int threadNum);
+    bool InitIOCP();
 
     void WorkerThread();
 
@@ -87,6 +104,7 @@ private:
     bool m_isRunning; // Server是否运行
 
     std::vector<std::thread> m_workerThreads;
+    std::shared_ptr<util::ThreadPool> m_threadPool;
     std::unordered_set<std::shared_ptr<ConnectionContext>> m_activeConnections; // 全局连接表
     std::mutex m_connectionsMutex;                                              // 互斥锁
 };

@@ -47,6 +47,9 @@ private:
     // 调整空间
     void ResizeSpace(size_t len);
 
+    // 整理缓冲区（将未读数据移动到头部）
+    void compact();
+
 private:
     std::vector<char> m_buffer;
     std::atomic<size_t> m_readPos;
