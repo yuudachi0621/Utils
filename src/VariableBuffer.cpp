@@ -50,6 +50,7 @@ void VariableBuffer::Append(const char* str, size_t len)
 void VariableBuffer::AddReadPos(size_t len)
 {
     m_readPos += len;
+    if (m_readPos == m_writePos) m_readPos = m_writePos = 0;
 }
 
 void VariableBuffer::AddWritePos(size_t len)

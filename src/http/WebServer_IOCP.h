@@ -48,8 +48,18 @@ private:
 
 enum IocpKey : ULONG_PTR
 {
-    kAcceptKey = 1,
-    kConnKey   = 2
+    kAcceptKey   = 1,
+    kConnKey     = 2,
+    kWriteReqKey = 3 // –¥«Î«Û
+};
+
+struct WriteRequest
+{
+    std::shared_ptr<ConnectionContext> context;
+    std::string responseData;
+
+    WriteRequest(std::shared_ptr<ConnectionContext> ctx, std::string&& data)
+        : context(std::move(ctx)), responseData(std::move(data)) {}
 };
 
 class WebServer_IOCP
@@ -79,7 +89,7 @@ private:
 
     void ProcessClientData(std::shared_ptr<ConnectionContext> context);
 
-    void ProcessHttpRequest(std::shared_ptr<ConnectionContext> context, size_t reqLen);
+    void ProcessHttpRequest(std::shared_ptr<ConnectionContext> context, const std::string& httpRequest);
 
     void HandleNewConnection(std::shared_ptr<ConnectionContext> context);
 
