@@ -30,7 +30,7 @@ size_t VariableBuffer::WritableLength() const
 
 const char* VariableBuffer::GetValidData() const
 {
-    return BeginPtr() + m_readPos;
+    return &m_buffer[m_readPos];
 }
 
 std::string VariableBuffer::GetValidDataToStr() const
@@ -57,9 +57,15 @@ void VariableBuffer::AddWritePos(size_t len)
     m_writePos += len;
 }
 
+void VariableBuffer::Consume(size_t n)
+{
+    m_readPos += n;
+    if (m_readPos == m_writePos)
+        m_readPos = m_writePos = 0;
+}
+
 void VariableBuffer::Reset()
 {
-    memset(BeginPtr(), 0, m_buffer.size());
     m_readPos  = 0;
     m_writePos = 0;
 }
@@ -76,12 +82,12 @@ const char* VariableBuffer::BeginPtr() const
 
 char* VariableBuffer::ReadableBegin()
 {
-    return BeginPtr() + m_readPos;
+    return &m_buffer[m_readPos];
 }
 
 char* VariableBuffer::WritableBegin()
 {
-    return BeginPtr() + m_writePos;
+    return &m_buffer[m_writePos];
 }
 
 void VariableBuffer::EnsureWriteable(size_t len)

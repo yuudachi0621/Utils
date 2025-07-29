@@ -34,6 +34,8 @@ public:
     void AddReadPos(size_t len);
     void AddWritePos(size_t len);
 
+    void Consume(size_t n);
+
     void Reset();
 
 private:

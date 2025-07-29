@@ -29,20 +29,20 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
         SafeClose();
     }
 
-    OVERLAPPED overlapped;                  // 异步 I/O操作的基础结构
-    WSABUF wsaBuf;                          // 异步 I/O 操作的数据缓冲区
-    std::atomic<bool> isReadPending{false}; // 当前连接的操作状态
-    char acceptBuffer[sizeof(sockaddr_in) * 2 + 32]{0};
+    OVERLAPPED readOv{};  // 读的Overlapped
+    OVERLAPPED writeOv{}; // 写的Overlapped
+    WSABUF wsaBuf;        // 异步 I/O 操作的数据缓冲区
+    char acceptBuffer[64]{0};
+    std::atomic<bool> closed{false};
 
     SOCKET socket = INVALID_SOCKET;
     VariableBuffer readBuff;
     VariableBuffer writeBuff;
 
 private:
-    ConnectionContext() // 禁止外部构造
-        : socket(INVALID_SOCKET), isReadPending(false), readBuff(1024 * 64), writeBuff(1024 * 64)
+    ConnectionContext()
+        : socket(INVALID_SOCKET), readBuff(1024 * 8), writeBuff(1024 * 8)
     {
-        ZeroMemory(&overlapped, sizeof(OVERLAPPED));
     }
 };
 
@@ -79,7 +79,7 @@ private:
 
     void ProcessClientData(std::shared_ptr<ConnectionContext> context);
 
-    void ProcessHttpRequest(std::shared_ptr<ConnectionContext> context);
+    void ProcessHttpRequest(std::shared_ptr<ConnectionContext> context, size_t reqLen);
 
     void HandleNewConnection(std::shared_ptr<ConnectionContext> context);
 
@@ -91,6 +91,8 @@ private:
     void PostWrite(std::shared_ptr<ConnectionContext> context);
 
     void CloseConnection(std::shared_ptr<ConnectionContext> context);
+
+    std::shared_ptr<ConnectionContext> FindContextByRaw(ConnectionContext* raw);
 
 private:
 #ifdef _MSC_VER
