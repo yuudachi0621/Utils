@@ -475,5 +475,4 @@ void WebServer_IOCP::CloseConnection(std::shared_ptr<ConnectionContext> context)
         std::lock_guard<std::mutex> lock(m_connectionsMutex);
         m_activeConnections.erase(context);
     }
-    context->SafeClose();
 }
