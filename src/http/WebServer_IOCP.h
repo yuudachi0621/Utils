@@ -1,6 +1,7 @@
 #pragma once
 #include "VariableBuffer.h"
 #include "WinNetworkDef.h"
+#include "safeQueue.h"
 #include "threadPool.h"
 #include <atomic>
 #include <memory>
@@ -18,7 +19,9 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
     {
         if (socket != INVALID_SOCKET)
         {
-            ::shutdown(socket, SD_BOTH);
+            ::shutdown(socket, SD_SEND);
+            char tmp[1024];
+            while (recv(socket, tmp, sizeof(tmp), 0) > 0) {} // 读完剩余
             ::closesocket(socket);
             socket = INVALID_SOCKET;
         }
@@ -29,37 +32,25 @@ struct ConnectionContext : public std::enable_shared_from_this<ConnectionContext
         SafeClose();
     }
 
-    OVERLAPPED readOv{};  // 读的Overlapped
-    OVERLAPPED writeOv{}; // 写的Overlapped
-    WSABUF wsaBuf;        // 异步 I/O 操作的数据缓冲区
+    OVERLAPPED readOv{};
+    OVERLAPPED writeOv{};
+    WSABUF wsaBuf{};
     char acceptBuffer[64]{0};
     std::atomic<bool> closed{false};
 
     SOCKET socket = INVALID_SOCKET;
-    VariableBuffer readBuff;
-    VariableBuffer writeBuff;
+    VariableBuffer readBuff{16 * 1024};
+    util::SafeQueue<std::vector<char>> sendQueue;
 
 private:
     ConnectionContext()
-        : socket(INVALID_SOCKET), readBuff(1024 * 8), writeBuff(1024 * 8)
-    {
-    }
+        : socket(INVALID_SOCKET) {}
 };
 
 enum IocpKey : ULONG_PTR
 {
-    kAcceptKey   = 1,
-    kConnKey     = 2,
-    kWriteReqKey = 3 // 写请求
-};
-
-struct WriteRequest
-{
-    std::shared_ptr<ConnectionContext> context;
-    std::string responseData;
-
-    WriteRequest(std::shared_ptr<ConnectionContext> ctx, std::string&& data)
-        : context(std::move(ctx)), responseData(std::move(data)) {}
+    kAcceptKey = 1,
+    kConnKey   = 2,
 };
 
 class WebServer_IOCP
@@ -89,8 +80,6 @@ private:
 
     void ProcessClientData(std::shared_ptr<ConnectionContext> context);
 
-    void ProcessHttpRequest(std::shared_ptr<ConnectionContext> context, const std::string& httpRequest);
-
     void HandleNewConnection(std::shared_ptr<ConnectionContext> context);
 
     // 投递AcceptEx请求
@@ -110,13 +99,13 @@ private:
     HANDLE m_iocpHandle;
 #endif
 
-    int m_port;       // Server监听端口
-    int m_listenFd;   // Server Fd
-    bool m_openLiger; // 优雅关闭
-    bool m_isRunning; // Server是否运行
+    SOCKET m_listenFd; // Server Fd
+    int m_port;        // Server监听端口
+    bool m_openLiger;  // 优雅关闭
+    bool m_isRunning;  // Server是否运行
 
-    std::vector<std::thread> m_workerThreads;
-    std::shared_ptr<util::ThreadPool> m_threadPool;
-    std::unordered_set<std::shared_ptr<ConnectionContext>> m_activeConnections; // 全局连接表
-    std::mutex m_connectionsMutex;                                              // 互斥锁
+    std::vector<std::thread> m_workerThreads;                                                       // WorkerThread()
+    std::shared_ptr<util::ThreadPool> m_threadPool;                                                 // HTTP处理
+    std::unordered_map<ConnectionContext*, std::shared_ptr<ConnectionContext>> m_activeConnections; // 全局连接表
+    std::mutex m_connectionsMutex;                                                                  // 互斥锁
 };

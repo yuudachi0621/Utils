@@ -20,6 +20,27 @@ std::string HttpConnect::GenerateResponse()
     return m_response.BuildResponse();
 }
 
+size_t HttpConnect::GetContentLength() const
+{
+    auto it = m_state.headers.find("");
+    if (it == m_state.headers.end())
+        return 0;
+
+    try
+    {
+        return std::stoull(it->second);
+    } catch (const std::exception& e)
+    {
+        LOG_ERROR("request content-length parsing failed, message:%s", e.what());
+        return 0;
+    }
+}
+
+void HttpConnect::SetRequestContent(const std::string content)
+{
+    m_state.body = content;
+}
+
 bool HttpConnect::IsKeepAlive() const
 {
     return m_state.keep_alive;

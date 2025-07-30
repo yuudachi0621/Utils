@@ -7,13 +7,16 @@
 class HttpConnect
 {
 public:
-public:
     HttpConnect()  = default;
     ~HttpConnect() = default;
 
     void ParseRequest(const std::string& message);
 
     std::string GenerateResponse();
+
+    size_t GetContentLength() const;
+
+    void SetRequestContent(const std::string content);
 
     bool IsKeepAlive() const;
 
