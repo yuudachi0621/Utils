@@ -114,7 +114,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\pool;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;$(SolutionDir)src\http;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\pool;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;E:\Program Files (x86)\MySQL\include;$(SolutionDir)src\http;$(SolutionDir)src\algorithm;$(SolutionDir)src\tool;$(SolutionDir)src\file;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -146,36 +146,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\http\HttpConnect.cpp" />
-    <ClCompile Include="..\src\http\HttpRequest.cpp" />
-    <ClCompile Include="..\src\http\HttpResponse.cpp" />
-    <ClCompile Include="..\src\http\webServer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\src\http\WebServer_IOCP.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\pool\sqlConnPool.cpp" />
-    <ClCompile Include="..\src\VariableBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\http\HttpConnect.h" />
-    <ClInclude Include="..\src\http\HttpDefine.h" />
-    <ClInclude Include="..\src\http\HttpRequest.h" />
-    <ClInclude Include="..\src\http\HttpResponse.h" />
-    <ClInclude Include="..\src\http\webServer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
+    <ClInclude Include="..\src\leetcode.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="..\src\http\WebServer_IOCP.h" />
-    <ClInclude Include="..\src\leetcode.h" />
-    <ClInclude Include="..\src\MMapFile.h" />
-    <ClInclude Include="..\src\pool\sqlConnPool.h" />
-    <ClInclude Include="..\src\VariableBuffer.h" />
-    <ClInclude Include="..\src\WinNetworkDef.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

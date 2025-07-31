@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="头文件\thread">
-      <UniqueIdentifier>{96ea3f5e-416a-4a39-addd-4d142f3e947c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="头文件\log">
       <UniqueIdentifier>{eb390b59-86ff-49d1-8635-f8daefbce860}</UniqueIdentifier>
     </Filter>
@@ -37,6 +34,33 @@
     <Filter Include="源文件\file">
       <UniqueIdentifier>{c9170228-ab8a-45c1-9f26-2a718fbd64e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\algorithm">
+      <UniqueIdentifier>{86e8bbea-35c9-4202-8b29-6adbcec85319}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\algorithm">
+      <UniqueIdentifier>{2ef6838e-b2c6-4e36-b11a-75834ace08e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\pool">
+      <UniqueIdentifier>{96ea3f5e-416a-4a39-addd-4d142f3e947c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\pool">
+      <UniqueIdentifier>{036ecc77-4961-4357-9cca-75002bb48932}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\tool">
+      <UniqueIdentifier>{0f88dd26-6b97-4d8b-8547-2a4c92f6b2bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\tool">
+      <UniqueIdentifier>{190739c0-6a23-430b-bea7-471b5c36861d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\container">
+      <UniqueIdentifier>{34b74d46-1d49-4bf8-8714-549748cc6930}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\http">
+      <UniqueIdentifier>{b12e7004-697b-4ae7-aac1-76698a9b6ae7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\http">
+      <UniqueIdentifier>{fc170321-57f6-414e-bf24-84c02149d135}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\log\log.cpp">
@@ -45,11 +69,41 @@
     <ClCompile Include="..\src\3rd\easyloggingpp\easylogging++.cc">
       <Filter>源文件\log</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\stringUtil.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="..\src\algorithm\Base64.cpp">
+      <Filter>源文件\algorithm</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\FileUtil.cpp">
+    <ClCompile Include="..\src\algorithm\EncryptMD5.cpp">
+      <Filter>源文件\algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\algorithm\URLEncode.cpp">
+      <Filter>源文件\algorithm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\file\FileUtil.cpp">
       <Filter>源文件\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pool\sqlConnPool.cpp">
+      <Filter>源文件\pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\tool\stringUtil.cpp">
+      <Filter>源文件\tool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\container\VariableBuffer.cpp">
+      <Filter>源文件\container</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\HttpConnect.cpp">
+      <Filter>源文件\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\HttpRequest.cpp">
+      <Filter>源文件\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\HttpResponse.cpp">
+      <Filter>源文件\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\webServer.cpp">
+      <Filter>源文件\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http\WebServer_IOCP.cpp">
+      <Filter>源文件\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -59,9 +113,6 @@
     <ClInclude Include="..\src\container\safeQueue.h">
       <Filter>头文件\container</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\stringUtil.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\3rd\json\json.hpp">
       <Filter>头文件\json</Filter>
     </ClInclude>
@@ -69,10 +120,7 @@
       <Filter>头文件\log</Filter>
     </ClInclude>
     <ClInclude Include="..\src\pool\ThreadPool.h">
-      <Filter>头文件\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\timer.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\pool</Filter>
     </ClInclude>
     <ClInclude Include="..\src\3rd\ghc\filesystem.hpp">
       <Filter>头文件\file\ghc</Filter>
@@ -92,8 +140,53 @@
     <ClInclude Include="..\src\3rd\ghc\fs_std_impl.hpp">
       <Filter>头文件\file\ghc</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\FileUtil.h">
+    <ClInclude Include="..\src\algorithm\Base64.h">
+      <Filter>头文件\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\algorithm\EncryptMD5.h">
+      <Filter>头文件\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\algorithm\URLEncode.h">
+      <Filter>头文件\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\file\FileUtil.h">
       <Filter>头文件\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\file\MMapFile.h">
+      <Filter>头文件\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pool\sqlConnPool.h">
+      <Filter>头文件\pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\tool\stringUtil.h">
+      <Filter>头文件\tool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\tool\timer.h">
+      <Filter>头文件\tool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\container\VariableBuffer.h">
+      <Filter>头文件\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpResponse.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\WebServer_IOCP.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpConnect.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpRequest.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\HttpDefine.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\webServer.h">
+      <Filter>头文件\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\http\WinNetworkDef.h">
+      <Filter>头文件\http</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
