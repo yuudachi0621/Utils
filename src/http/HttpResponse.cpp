@@ -1,12 +1,32 @@
 #include "HttpResponse.h"
 #include "FileUtil.h"
 #include "MMapFile.h"
+#include "URLEncode.h"
+#include "stringUtil.h"
+#include "sqlConnPool.h"
+#include "log.h"
 
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
 using namespace util;
+
+class sqlRAII
+{
+public:
+    sqlRAII(MYSQL* sql)
+    {
+        m_sql = sql;
+    }
+    ~sqlRAII()
+    {
+        sqlConnPool::Instance().FreeConn(m_sql);
+    }
+
+private:
+    MYSQL* m_sql;
+};
 
 void HttpResponse::Init(HttpRequestState* request)
 {
@@ -122,9 +142,19 @@ void HttpResponse::HandleGet()
 
 void HttpResponse::HandlePost()
 {
+    bool result             = false;
     std::string contextType = m_request->headers["content-type"];
     if (contextType == "application/x-www-form-urlencoded")
     {
+        auto user = ParseBody();
+        if (m_request->path == "/register") // 注册行为
+        {
+            result = RegisterUser(user["username"], user["password"]);
+        }
+        else if (m_request->path == "/login") // 登陆行为
+        {
+            result = LoginVerify(user["username"], user["password"]);
+        }
     }
     else if (contextType == "application/json")
     {
@@ -139,7 +169,13 @@ void HttpResponse::HandlePost()
     else
     {
         SendError(415, "Unsupported Media Type");
+        return;
     }
+
+    if (result)
+        SendFile(g_resourcePath + "/welcome.html");
+    else
+        SendFile(g_resourcePath + "/error.html");
 }
 
 void HttpResponse::HandleOptions()
@@ -193,6 +229,107 @@ void HttpResponse::PrepareCommonHeaders()
     {
         AddHeader("Connection", "close");
     }
+}
+
+std::map<std::string, std::string> HttpResponse::ParseBody()
+{
+    if (m_request->body.empty()) return {};
+
+    std::map<std::string, std::string> result;
+
+    std::vector<std::string> pairs = util::StringUtil::Split(m_request->body, "&");
+    for (auto& pair : pairs)
+    {
+        size_t pos        = pair.find("=");
+        std::string key   = URLEncode::decode(pair.substr(0, pos));
+        std::string value = (pos == std::string::npos) ? "" : URLEncode::decode(pair.substr(pos + 1));
+
+        result[std::move(key)] = std::move(value);
+    }
+    return result;
+}
+
+bool HttpResponse::LoginVerify(const std::string& name, const std::string& pwd)
+{
+    if (name.empty() || pwd.empty())
+    {
+        LOG_DEBUG("LoginVerify: empty name or pwd");
+        return false;
+    }
+
+    // 获取空闲的SQL指针
+    MYSQL* sql = sqlConnPool::Instance().GetFreeConn();
+    if (nullptr == sql) return false;
+    sqlRAII raii(sql);
+
+    std::string query = util::StringUtil::Format("SELECT password FROM user WHERE username='%s' LIMIT 1", name.c_str());
+    if (mysql_query(sql, query.data()))
+    {
+        LOG_DEBUG("LoginVerify: query failed");
+        return false;
+    }
+
+    MYSQL_RES* res = mysql_store_result(sql);
+    if (!res)
+    {
+        LOG_DEBUG("LoginVerify: no such user");
+        return false;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (!row)
+    {
+        mysql_free_result(res);
+        LOG_DEBUG("LoginVerify: user not found");
+        return false;
+    }
+    std::string db_password(row[0]);
+    bool success = (pwd == db_password); // 实际应该对比哈希值，而非明文
+
+    mysql_free_result(res);
+    LOG_DEBUG("LoginVerify: %s", success ? "success" : "wrong password");
+    return success;
+}
+
+bool HttpResponse::RegisterUser(const std::string& name, const std::string& pwd)
+{
+    if (name.empty() || pwd.empty())
+    {
+        LOG_DEBUG("RegisterUser: empty name or pwd");
+        return false;
+    }
+
+    // 获取空闲的SQL指针
+    MYSQL* sql = sqlConnPool::Instance().GetFreeConn();
+    if (nullptr == sql) return false;
+    sqlRAII raii(sql);
+
+    // 先检查用户名是否已存在
+    std::string check_query = util::StringUtil::Format("SELECT username FROM user WHERE username='%s' LIMIT 1", name.c_str());
+    if (mysql_query(sql, check_query.data()))
+    {
+        LOG_DEBUG("RegisterUser: check query failed");
+        return false;
+    }
+
+    MYSQL_RES* res = mysql_store_result(sql);
+    if (res && mysql_fetch_row(res))
+    {
+        mysql_free_result(res);
+        LOG_DEBUG("RegisterUser: username already exists");
+        return false; // 用户名已存在
+    }
+    mysql_free_result(res);
+
+    // 插入新用户
+    std::string insert_query = util::StringUtil::Format("INSERT INTO user(username, password) VALUES('%s', '%s')", name.c_str(), pwd.c_str());
+    if (mysql_query(sql, insert_query.data()))
+    {
+        LOG_DEBUG("RegisterUser: insert failed");
+        return false;
+    }
+    LOG_DEBUG("RegisterUser: success");
+    return true;
 }
 
 std::string HttpResponse::GetCurrentHttpDate() const

@@ -4,6 +4,7 @@
 
 #include "json.hpp"
 
+#include <map>
 #include <string>
 
 class HttpResponse
@@ -33,6 +34,11 @@ private:
     void ParsePath();
 
     void PrepareCommonHeaders();
+    std::map<std::string, std::string> ParseBody();
+    bool LoginVerify(const std::string& name, const std::string& pwd);
+    bool RegisterUser(const std::string& name, const std::string& pwd);
+
+private:
     std::string GetCurrentHttpDate() const;
     std::string GetMimeType(const std::string& path) const;
 

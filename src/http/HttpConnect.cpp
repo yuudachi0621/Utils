@@ -22,7 +22,7 @@ std::string HttpConnect::GenerateResponse()
 
 size_t HttpConnect::GetContentLength() const
 {
-    auto it = m_state.headers.find("");
+    auto it = m_state.headers.find("content-length");
     if (it == m_state.headers.end())
         return 0;
 

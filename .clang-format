@@ -157,7 +157,7 @@ PointerAlignment: Left
 ReflowComments: true
 
 # 允许排序#include
-SortIncludes: true
+SortIncludes: false
 
 # 允许排序 using 声明
 SortUsingDeclarations: true
