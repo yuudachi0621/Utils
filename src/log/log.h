@@ -13,7 +13,7 @@ namespace util {
 class Log
 {
 private:
-    static const int LOG_MAX_LINES = 1000; // 日志最大行数
+    static const int LOG_MAX_LINES = 10000; // 日志最大行数
 
 public:
     static Log& GetInstance();
