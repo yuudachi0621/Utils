@@ -40,7 +40,7 @@ public:
             unmap();
 
 #ifdef _WIN32
-        // Windows实现
+        // Windows瀹炵幇
         m_fileHandle = CreateFileA(
             filePath.c_str(),
             GENERIC_READ,
@@ -55,7 +55,7 @@ public:
             return false;
         }
 
-        // 获取文件大小
+        // 鑾峰彇鏂囦欢澶у皬
         LARGE_INTEGER fileSize;
         if (!GetFileSizeEx(m_fileHandle, &fileSize))
         {
@@ -64,7 +64,7 @@ public:
         }
         m_size = static_cast<size_t>(fileSize.QuadPart);
 
-        // 创建文件映射
+        // 鍒涘缓鏂囦欢鏄犲皠
         m_mappingHandle = CreateFileMapping(
             m_fileHandle,
             NULL,
@@ -79,7 +79,7 @@ public:
             return false;
         }
 
-        // 映射视图
+        // 鏄犲皠瑙嗗浘
         m_data = MapViewOfFile(
             m_mappingHandle,
             FILE_MAP_READ,
@@ -100,7 +100,7 @@ public:
             return false;
         }
 
-        // 获取文件大小
+        // 鑾峰彇鏂囦欢澶у皬
         struct stat sb;
         if (fstat(m_fd, &sb) == -1)
         {
@@ -109,7 +109,7 @@ public:
         }
         m_size = sb.st_size;
 
-        // 内存映射
+        // 鍐呭瓨鏄犲皠
         m_data = mmap(NULL, m_size, PROT_READ, MAP_PRIVATE, m_fd, 0);
         if (data_ == MAP_FAILED)
         {
@@ -117,7 +117,7 @@ public:
             return false;
         }
 
-        // 建议内核预读
+        // 寤鸿鍐呮牳棰勮
         madvise(m_data, m_size, MADV_SEQUENTIAL);
 #endif
         return true;
@@ -128,19 +128,19 @@ public:
         unmap();
     }
 
-    // 获取映射数据指针
+    // 鑾峰彇鏄犲皠鏁版嵁鎸囬拡
     const char* data() const noexcept
     {
         return static_cast<const char*>(m_data);
     }
 
-    // 获取文件大小
+    // 鑾峰彇鏂囦欢澶у皬
     size_t size() const noexcept
     {
         return m_size;
     }
 
-    // 是否映射成功
+    // 鏄惁鏄犲皠鎴愬姛
     bool is_mapped() const noexcept
     {
         return m_data != nullptr;

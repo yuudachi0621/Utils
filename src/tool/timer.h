@@ -12,9 +12,9 @@ class Timer
 public:
     static size_t Years()
     {
-        auto now               = std::chrono::system_clock::now();          // »ñÈ¡µ±Ç°Ê±¼äµã
-        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // ×ª»»Îªtime_tÀàĞÍ
-        std::tm local_tm       = *std::localtime(&now_time_t);              // ×ª»»Îª±¾µØÊ±¼ä
+        auto now               = std::chrono::system_clock::now();          // è·å–å½“å‰æ—¶é—´ç‚¹
+        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // è½¬æ¢ä¸ºtime_tç±»å‹
+        std::tm local_tm       = *std::localtime(&now_time_t);              // è½¬æ¢ä¸ºæœ¬åœ°æ—¶é—´
         return local_tm.tm_year + 1900;
     }
 
@@ -34,14 +34,14 @@ public:
         return local_tm.tm_mday;
     }
 
-    // Äê_ÔÂ_ÈÕ
+    // å¹´_æœˆ_æ—¥
     static std::string FormatYMD(const char* fmt = "%d-%02d-%02d")
     {
         auto now               = std::chrono::system_clock::now();
         std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
         std::tm local_tm       = *std::localtime(&now_time_t);
 
-        // ÄêÔÂÈÕÊ±·Ö
+        // å¹´æœˆæ—¥æ—¶åˆ†
         auto curtime = StringUtil::Format(fmt,
                                           local_tm.tm_year + 1900,
                                           local_tm.tm_mon + 1,
@@ -49,25 +49,25 @@ public:
         return curtime;
     }
 
-    // Ê±_·Ö_Ãë_ºÁÃë
+    // æ—¶_åˆ†_ç§’_æ¯«ç§’
     static std::string FormatHMSS(const char* fmt = "%02d:%02d:%02d.%03d")
     {
         auto now                 = std::chrono::system_clock::now();
         uint64_t dis_millseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()
                                    - std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count() * 1000;
-        time_t tt    = std::chrono::system_clock::to_time_t(now);
-        auto time_tm = localtime(&tt);
+        time_t tt                = std::chrono::system_clock::to_time_t(now);
+        auto time_tm             = localtime(&tt);
         return StringUtil::Format(fmt, time_tm->tm_hour, time_tm->tm_min, time_tm->tm_sec, (int)dis_millseconds);
     }
 
-    // Äê_ÔÂ_ÈÕ_Ê±_·Ö_Ãë
+    // å¹´_æœˆ_æ—¥_æ—¶_åˆ†_ç§’
     static std::string FormatYMDHMS(const char* fmt = "%d-%02d-%02d %02d:%02d:%02d")
     {
-        auto now               = std::chrono::system_clock::now();          // »ñÈ¡µ±Ç°Ê±¼äµã
-        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // ×ª»»Îªtime_tÀàĞÍ
-        std::tm local_tm       = *std::localtime(&now_time_t);              // ×ª»»Îª±¾µØÊ±¼ä
+        auto now               = std::chrono::system_clock::now();          // è·å–å½“å‰æ—¶é—´ç‚¹
+        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // è½¬æ¢ä¸ºtime_tç±»å‹
+        std::tm local_tm       = *std::localtime(&now_time_t);              // è½¬æ¢ä¸ºæœ¬åœ°æ—¶é—´
 
-        // ÄêÔÂÈÕÊ±·Ö
+        // å¹´æœˆæ—¥æ—¶åˆ†
         auto curtime = StringUtil::Format(fmt,
                                           local_tm.tm_year + 1900,
                                           local_tm.tm_mon + 1,
@@ -78,16 +78,16 @@ public:
         return curtime;
     }
 
-    // Äê_ÔÂ_ÈÕ_Ê±_·Ö_Ãë_ºÁÃë
+    // å¹´_æœˆ_æ—¥_æ—¶_åˆ†_ç§’_æ¯«ç§’
     static std::string FormatYMDHMSS(const char* fmt = "%d-%02d-%02d %02d:%02d:%02d.%03d")
     {
-        auto now                 = std::chrono::system_clock::now();          // »ñÈ¡µ±Ç°Ê±¼äµã
-        std::time_t now_time_t   = std::chrono::system_clock::to_time_t(now); // ×ª»»Îªtime_tÀàĞÍ
-        std::tm local_tm         = *std::localtime(&now_time_t);              // ×ª»»Îª±¾µØÊ±¼ä
+        auto now                 = std::chrono::system_clock::now();          // è·å–å½“å‰æ—¶é—´ç‚¹
+        std::time_t now_time_t   = std::chrono::system_clock::to_time_t(now); // è½¬æ¢ä¸ºtime_tç±»å‹
+        std::tm local_tm         = *std::localtime(&now_time_t);              // è½¬æ¢ä¸ºæœ¬åœ°æ—¶é—´
         uint64_t dis_millseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()
                                    - std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count() * 1000;
 
-        // ÄêÔÂÈÕÊ±·Ö
+        // å¹´æœˆæ—¥æ—¶åˆ†
         auto curtime = StringUtil::Format(fmt,
                                           local_tm.tm_year + 1900,
                                           local_tm.tm_mon + 1,
@@ -106,11 +106,11 @@ public:
 
     static std::string GetCurTime()
     {
-        auto now               = std::chrono::system_clock::now();          // »ñÈ¡µ±Ç°Ê±¼äµã
-        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // ×ª»»Îªtime_tÀàĞÍ
-        std::tm local_tm       = *std::localtime(&now_time_t);              // ×ª»»Îª±¾µØÊ±¼ä
+        auto now               = std::chrono::system_clock::now();          // è·å–å½“å‰æ—¶é—´ç‚¹
+        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now); // è½¬æ¢ä¸ºtime_tç±»å‹
+        std::tm local_tm       = *std::localtime(&now_time_t);              // è½¬æ¢ä¸ºæœ¬åœ°æ—¶é—´
 
-        // ÄêÔÂÈÕÊ±·Ö
+        // å¹´æœˆæ—¥æ—¶åˆ†
         auto curtime = StringUtil::Format("%d%02d%02d%02d%02d%02d",
                                           local_tm.tm_year + 1900,
                                           local_tm.tm_mon + 1,

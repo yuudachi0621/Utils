@@ -129,7 +129,7 @@ void Log::AsyncWrite()
         std::string logMessage = m_queue.pop();
 
         fputs(logMessage.c_str(), m_fp);
-        fflush(m_fp); // È·±£Ğ´Èë´ÅÅÌ
+        fflush(m_fp); // ç¡®ä¿å†™å…¥ç£ç›˜
     }
 }
 

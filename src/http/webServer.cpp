@@ -47,9 +47,9 @@ void webServer::Start()
     fd_set readfds, writefds;
     struct timeval timeout;
     std::vector<ClientInfo> clients(webServerMaxCount);
-    std::mutex clientsMutex; // ÓÃÓÚ±£»¤clientsÊı×éµÄÏß³Ì°²È«
+    std::mutex clientsMutex; // ç”¨äºä¿æŠ¤clientsæ•°ç»„çš„çº¿ç¨‹å®‰å…¨
 
-    // ³õÊ¼»¯¿Í»§¶ËÊı×é
+    // åˆå§‹åŒ–å®¢æˆ·ç«¯æ•°ç»„
     for (auto& client : clients)
     {
         client.socket    = INVALID_SOCKET;
@@ -58,27 +58,27 @@ void webServer::Start()
         client.writeBuff.Reset();
     }
 
-    // Ö÷Ñ­»·
+    // ä¸»å¾ªç¯
     while (true)
     {
-        timeout.tv_sec  = 0; // Ã¿´ÎÑ­»·ÖØÖÃtimeout, 0Ãë
+        timeout.tv_sec  = 0; // æ¯æ¬¡å¾ªç¯é‡ç½®timeout, 0ç§’
         timeout.tv_usec = 0;
 
-        // Ìí¼ÓÒ»¸öÔªËØ
+        // æ·»åŠ ä¸€ä¸ªå…ƒç´ 
         // FD_SET(socketServer, &allSockets);
-        // É¾³ıÒ»¸öÔªËØ
+        // åˆ é™¤ä¸€ä¸ªå…ƒç´ 
         // FD_CLR(socketServer, &allSockets);
-        // ÅĞ¶ÏsocketÊÇ·ñÔÚ¼¯ºÏÖĞ£¬²»ÔÚ·µ»Ø0£¬ÔÚÔò·µ»Ø·Ç0
+        // åˆ¤æ–­socketæ˜¯å¦åœ¨é›†åˆä¸­ï¼Œä¸åœ¨è¿”å›0ï¼Œåœ¨åˆ™è¿”å›é0
         // FD_ISSET(socketServer, &allSockets);
 
-        // Çå¿Õ²¢ÉèÖÃÎÄ¼şÃèÊö·û¼¯ºÏ
+        // æ¸…ç©ºå¹¶è®¾ç½®æ–‡ä»¶æè¿°ç¬¦é›†åˆ
         FD_ZERO(&readfds);
         FD_ZERO(&writefds);
         FD_SET(m_listenFd, &readfds);
 
         SOCKET maxFd = m_listenFd;
 
-        // ¹¹½¨ÎÄ¼şÃèÊö·û¼¯ºÏ
+        // æ„å»ºæ–‡ä»¶æè¿°ç¬¦é›†åˆ
         {
             std::lock_guard<std::mutex> lock(clientsMutex);
             for (auto& client : clients)
@@ -98,7 +98,7 @@ void webServer::Start()
             }
         }
 
-        // ¼à¿Ø¶ÁĞ´ÊÂ¼ş
+        // ç›‘æ§è¯»å†™äº‹ä»¶
         int activity = select(maxFd + 1, &readfds, &writefds, NULL, &timeout);
         if (activity == SOCKET_ERROR)
         {
@@ -106,16 +106,16 @@ void webServer::Start()
             break;
         }
 
-        // ´¦ÀíĞÂÁ¬½Ó
+        // å¤„ç†æ–°è¿æ¥
         if (FD_ISSET(m_listenFd, &readfds))
         {
             HandleNewConnection(clients, clientsMutex);
         }
-        // ´¦Àí¿Í»§¶Ë»î¶¯
+        // å¤„ç†å®¢æˆ·ç«¯æ´»åŠ¨
         ProcessClientActivities(clients, readfds, writefds, clientsMutex);
     }
 
-    // ÇåÀí
+    // æ¸…ç†
     CleanupClients(clients);
 }
 
@@ -140,7 +140,7 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
         return;
     }
 
-    // ÉèÖÃ·Ç×èÈûÄ£Ê½
+    // è®¾ç½®éé˜»å¡æ¨¡å¼
     u_long mode = 1;
     if (ioctlsocket(newSocket, FIONBIO, &mode) == SOCKET_ERROR)
     {
@@ -149,7 +149,7 @@ void webServer::HandleNewConnection(std::vector<ClientInfo>& clients, std::mutex
         return;
     }
 
-    // Ìí¼Óµ½¿Í»§¶ËÊı×é
+    // æ·»åŠ åˆ°å®¢æˆ·ç«¯æ•°ç»„
     std::lock_guard<std::mutex> lock(clientsMutex);
     for (auto& client : clients)
     {
@@ -176,7 +176,7 @@ void webServer::ProcessClientActivities(std::vector<ClientInfo>& clients, fd_set
         auto& client = clients[i];
         if (client.socket == INVALID_SOCKET) continue;
 
-        // ´¦Àí¶ÁÊÂ¼ş
+        // å¤„ç†è¯»äº‹ä»¶
         if (FD_ISSET(client.socket, &readfds))
         {
             if (!HandleClientRead(client))
@@ -185,7 +185,7 @@ void webServer::ProcessClientActivities(std::vector<ClientInfo>& clients, fd_set
             }
         }
 
-        // ´¦ÀíĞ´ÊÂ¼ş
+        // å¤„ç†å†™äº‹ä»¶
         if (FD_ISSET(client.socket, &writefds) && client.needWrite)
         {
             if (!HandleClientWrite(client))
@@ -226,10 +226,10 @@ bool webServer::HandleClientRead(ClientInfo& client)
 
     client.readBuff.Append(clientData, recvResult);
 
-    // ´¦ÀíÍêÕûÇëÇó
+    // å¤„ç†å®Œæ•´è¯·æ±‚
     if (util::StringUtil::Find(client.readBuff.GetValidData(), client.readBuff.ValidLength(), "\r\n\r\n", strlen("\r\n\r\n")) != nullptr)
     {
-        // Ê¹ÓÃÏß³Ì³Ø´¦ÀíÇëÇó
+        // ä½¿ç”¨çº¿ç¨‹æ± å¤„ç†è¯·æ±‚
         auto ret = m_threadPool->enqueue([this, &client]() {
             ProcessHttpRequest(client);
             client.needWrite = true;
@@ -270,7 +270,7 @@ bool webServer::HandleClientWrite(ClientInfo& client)
         LOG_ERROR("send response exception, connection closed");
         return false;
     }
-    else if (client.writeBuff.ValidLength() == 0) // Ğ´ÈëÍê³É
+    else if (client.writeBuff.ValidLength() == 0) // å†™å…¥å®Œæˆ
     {
         client.needWrite = false;
         client.writeBuff.Reset();
@@ -291,7 +291,7 @@ void webServer::CleanupClients(std::vector<ClientInfo>& clients)
 
 std::string webServer::GetClientIP(SOCKET socket)
 {
-    // »ñÈ¡¿Í»§¶ËIP
+    // è·å–å®¢æˆ·ç«¯IP
     char Buffer[22] = {0};
 
     sockaddr_in addr = {0};
@@ -336,7 +336,7 @@ bool webServer::InitSocket()
         optLinger.l_linger = 1;
     }
 
-    // ´´½¨ socket
+    // åˆ›å»º socket
     m_listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if (m_listenFd == INVALID_SOCKET)
     {
@@ -353,7 +353,7 @@ bool webServer::InitSocket()
     }
 
     int optval = 1;
-    /* ¶Ë¿Ú¸´ÓÃ */
+    /* ç«¯å£å¤ç”¨ */
     ret = setsockopt(m_listenFd, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(int));
     if (ret == SOCKET_ERROR)
     {
@@ -362,7 +362,7 @@ bool webServer::InitSocket()
         return false;
     }
 
-    // °ó¶¨ socket
+    // ç»‘å®š socket
     ret = bind(m_listenFd, (struct sockaddr*)&addr, sizeof(addr));
     if (ret == SOCKET_ERROR)
     {
@@ -371,7 +371,7 @@ bool webServer::InitSocket()
         return false;
     }
 
-    // ¼àÌıÁ¬½Ó
+    // ç›‘å¬è¿æ¥
     ret = listen(m_listenFd, 6);
     if (ret == SOCKET_ERROR)
     {
@@ -380,7 +380,7 @@ bool webServer::InitSocket()
         return false;
     }
 
-    // ÉèÖÃ·Ç×èÈûÄ£Ê½
+    // è®¾ç½®éé˜»å¡æ¨¡å¼
     u_long mode = 1;
     if (ioctlsocket(m_listenFd, FIONBIO, &mode) == SOCKET_ERROR)
     {

@@ -13,19 +13,19 @@ namespace util {
 class Log
 {
 private:
-    static const int LOG_MAX_LINES = 10000; // ÈÕÖ¾×î´óĞĞÊı
+    static const int LOG_MAX_LINES = 10000; // æ—¥å¿—æœ€å¤§è¡Œæ•°
 
 public:
     static Log& GetInstance();
     static void FlushLogThread();
 
-    // ³õÊ¼»¯
+    // åˆå§‹åŒ–
     bool Init(int level, const std::string& path = "./log", const std::string& suffix = ".log", bool isAsync = true);
 
     template <typename... Args>
     void WriteLog(int level, const std::string& format, Args... args);
 
-    // È·±£Êı¾İ´ÓÓÃ»§»º³åÇø½øÈëÄÚºË»º³åÇø
+    // ç¡®ä¿æ•°æ®ä»ç”¨æˆ·ç¼“å†²åŒºè¿›å…¥å†…æ ¸ç¼“å†²åŒº
     void Flush();
 
     // Level
@@ -43,18 +43,18 @@ private:
     void AsyncWrite();
 
 private:
-    std::string m_path;   // ´æ·ÅÂ·¾¶
-    std::string m_suffix; // ºó×ºÃû
-    int m_toDay;          // ÈÕÆÚ
-    int m_lineCount;      // ĞĞÊı
-    int m_level;          // ÈÕÖ¾µÈ¼¶
+    std::string m_path;   // å­˜æ”¾è·¯å¾„
+    std::string m_suffix; // åç¼€å
+    int m_toDay;          // æ—¥æœŸ
+    int m_lineCount;      // è¡Œæ•°
+    int m_level;          // æ—¥å¿—ç­‰çº§
 
-    bool m_isAsync;                // ÊÇ·ñÒì²½
-    std::atomic<bool> m_isRunning; // ÊÇ·ñÔËĞĞ
+    bool m_isAsync;                // æ˜¯å¦å¼‚æ­¥
+    std::atomic<bool> m_isRunning; // æ˜¯å¦è¿è¡Œ
 
     FILE* m_fp;
     std::mutex m_mtx;
-    std::thread m_writeThread; // Ğ´Ïß³Ì
+    std::thread m_writeThread; // å†™çº¿ç¨‹
     VariableBuffer m_logBuff;
     SafeQueue<std::string> m_queue;
 };
@@ -65,7 +65,7 @@ void Log::WriteLog(int level, const std::string& format, Args... args)
     if (!m_isRunning)
         return;
 
-    // ¼ì²éÊ±¼äºÍĞĞÊı
+    // æ£€æŸ¥æ—¶é—´å’Œè¡Œæ•°
     bool isDateChange = (Timer::Days() != m_toDay);
     if (isDateChange
         || (m_lineCount > 0 && (m_lineCount % LOG_MAX_LINES == 0)))
@@ -95,15 +95,15 @@ void Log::WriteLog(int level, const std::string& format, Args... args)
         std::unique_lock<std::mutex> locker(m_mtx);
         m_lineCount++;
 
-        // ÈÕÖ¾Ê±¼ä
+        // æ—¥å¿—æ—¶é—´
         std::string curTime = util::Timer::FormatYMDHMSS("%d-%02d-%02d %02d:%02d:%02d.%03d ");
         m_logBuff.Append(curTime.data(), curTime.size());
-        // ÈÕÖ¾µÈ¼¶
+        // æ—¥å¿—ç­‰çº§
         AppendLogLevelTitle(level);
-        // ÈÕÖ¾ÄÚÈİ
+        // æ—¥å¿—å†…å®¹
         std::string logMessage = util::StringUtil::Format(format.data(), std::forward<Args>(args)...);
         m_logBuff.Append(logMessage.data(), logMessage.size());
-        // ÈÕÖ¾Î²²¿»»ĞĞ
+        // æ—¥å¿—å°¾éƒ¨æ¢è¡Œ
         m_logBuff.Append("\n\0", 2);
 
         if (m_isAsync)
@@ -119,9 +119,10 @@ void Log::WriteLog(int level, const std::string& format, Args... args)
     }
 }
 
-// ±ÈÉè¶¨µÄLevel¸ß²Å¼ÇÂ¼
+// æ¯”è®¾å®šçš„Levelé«˜æ‰è®°å½•
 #define LOG_BASE(level, format, ...)                                               \
-    do {                                                                           \
+    do                                                                             \
+    {                                                                              \
         if (Log::GetInstance().IsOpen() && Log::GetInstance().GetLevel() <= level) \
         {                                                                          \
             Log::GetInstance().WriteLog(level, format, ##__VA_ARGS__);             \
@@ -129,19 +130,23 @@ void Log::WriteLog(int level, const std::string& format, Args... args)
     } while (0);
 
 #define LOG_DEBUG(format, ...)             \
-    do {                                   \
+    do                                     \
+    {                                      \
         LOG_BASE(0, format, ##__VA_ARGS__) \
     } while (0);
 #define LOG_INFO(format, ...)              \
-    do {                                   \
+    do                                     \
+    {                                      \
         LOG_BASE(1, format, ##__VA_ARGS__) \
     } while (0);
 #define LOG_WARN(format, ...)              \
-    do {                                   \
+    do                                     \
+    {                                      \
         LOG_BASE(2, format, ##__VA_ARGS__) \
     } while (0);
 #define LOG_ERROR(format, ...)             \
-    do {                                   \
+    do                                     \
+    {                                      \
         LOG_BASE(3, format, ##__VA_ARGS__) \
     } while (0);
 

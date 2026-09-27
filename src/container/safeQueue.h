@@ -12,7 +12,7 @@ class SafeQueue
 {
 public:
     SafeQueue()
-        : m_size(0){};
+        : m_size(0) {};
 
     void push(const T& item) { emplace_back(item); }
     void push(T&& item) { emplace_back(std::move(item)); }

@@ -8,7 +8,7 @@ static constexpr auto TEMP_BUFFER_SIZE = 4096;
 typedef struct ClientInfo
 {
     SOCKET socket;
-    std::atomic<bool> needWrite; // ÊÇ·ñĞèÒª¼à¿ØĞ´ÊÂ¼ş
+    std::atomic<bool> needWrite; // æ˜¯å¦éœ€è¦ç›‘æ§å†™äº‹ä»¶
     VariableBuffer readBuff;
     VariableBuffer writeBuff;
 };
@@ -56,12 +56,12 @@ private:
 
 private:
 #ifdef _MSC_VER
-    WSAInit m_wsaInit; // WindowsÆ½Ì¨ĞèÒª³õÊ¼»¯ Winsock
+    WSAInit m_wsaInit; // Windowså¹³å°éœ€è¦åˆå§‹åŒ– Winsock
 #endif
 
-    int m_port;       // Server¼àÌı¶Ë¿Ú
+    int m_port;       // Serverç›‘å¬ç«¯å£
     int m_listenFd;   // Server Fd
-    bool m_openLiger; // ÓÅÑÅ¹Ø±Õ
+    bool m_openLiger; // ä¼˜é›…å…³é—­
 
-    std::unique_ptr<util::ThreadPool> m_threadPool; // Ïß³Ì³Ø
+    std::unique_ptr<util::ThreadPool> m_threadPool; // çº¿ç¨‹æ± 
 };

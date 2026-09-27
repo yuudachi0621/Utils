@@ -2,8 +2,8 @@
 
 #ifdef _MSC_VER
 
-#define NOMINMAX            // ½ûÓÃ min/max ºê
-#define WIN32_LEAN_AND_MEAN // ¼õÉÙ Windows Í·ÎÄ¼şµÄÈßÓàÄÚÈİ
+#define NOMINMAX            // ç¦ç”¨ min/max å®
+#define WIN32_LEAN_AND_MEAN // å‡å°‘ Windows å¤´æ–‡ä»¶çš„å†—ä½™å†…å®¹
 
 #include <WinSock2.h>
 #include <stdexcept>

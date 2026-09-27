@@ -8,29 +8,29 @@ public:
     VariableBuffer(int initBufferSize = 1024);
     ~VariableBuffer();
 
-    // ¹ıÆÚÊı¾İ³¤¶È
+    // è¿‡æœŸæ•°æ®é•¿åº¦
     size_t InvalidLength() const;
 
-    // ÓĞĞ§Êı¾İ³¤¶È
+    // æœ‰æ•ˆæ•°æ®é•¿åº¦
     size_t ValidLength() const;
 
-    // ÓĞĞ§Ê£ÓàĞ´Èë³¤¶È
+    // æœ‰æ•ˆå‰©ä½™å†™å…¥é•¿åº¦
     size_t WritableLength() const;
 
-    // ·µ»ØÓĞĞ§Êı¾İ
+    // è¿”å›æœ‰æ•ˆæ•°æ®
     const char* GetValidData() const;
     std::string GetValidDataToStr() const;
 
-    // Ìí¼ÓÊı¾İ
+    // æ·»åŠ æ•°æ®
     void Append(const char* str, size_t len);
 
-    // ÓĞĞ§¿É¶ÁµØÖ·
+    // æœ‰æ•ˆå¯è¯»åœ°å€
     char* ReadableBegin();
 
-    // ÓĞĞ§¿ÉĞ´µØÖ·
+    // æœ‰æ•ˆå¯å†™åœ°å€
     char* WritableBegin();
 
-    // Æ«ÒÆ
+    // åç§»
     void AddReadPos(size_t len);
     void AddWritePos(size_t len);
 
@@ -43,13 +43,13 @@ private:
 
     const char* BeginPtr() const;
 
-    // È·±£Ğ´Èë³¤¶ÈÓĞĞ§
+    // ç¡®ä¿å†™å…¥é•¿åº¦æœ‰æ•ˆ
     void EnsureWriteable(size_t len);
 
-    // µ÷Õû¿Õ¼ä
+    // è°ƒæ•´ç©ºé—´
     void ResizeSpace(size_t len);
 
-    // ÕûÀí»º³åÇø£¨½«Î´¶ÁÊı¾İÒÆ¶¯µ½Í·²¿£©
+    // æ•´ç†ç¼“å†²åŒºï¼ˆå°†æœªè¯»æ•°æ®ç§»åŠ¨åˆ°å¤´éƒ¨ï¼‰
     void compact();
 
 private:

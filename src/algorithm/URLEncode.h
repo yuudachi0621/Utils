@@ -3,9 +3,9 @@
 class URLEncode
 {
 public:
-    // URL±àÂë
+    // URLç¼–ç 
     static std::string encode(const std::string& value);
 
-    // URL½âÂë
+    // URLè§£ç 
     static std::string decode(const std::string& value);
 };

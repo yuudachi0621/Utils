@@ -8,21 +8,21 @@ namespace util {
 class FileUtil
 {
 public:
-    // ¶ÁÈ¡ÎÄ¼ş
+    // è¯»å–æ–‡ä»¶
     static std::string ReadFile(const std::string& filename);
-    // Ğ´ÎÄ¼ş
+    // å†™æ–‡ä»¶
     static void WriteFile(const std::string& filename, const char* data, size_t size);
-    // ÖØÃüÃûÎÄ¼ş
+    // é‡å‘½åæ–‡ä»¶
     static bool RenameFile(const std::string& oldName, const std::string& newName);
 
-    // Â·¾¶ÊÇ·ñ´æÔÚ
+    // è·¯å¾„æ˜¯å¦å­˜åœ¨
     static bool IsPathExist(const std::string& path);
-    // ÎÄ¼şÊÇ·ñ´æÔÚ
+    // æ–‡ä»¶æ˜¯å¦å­˜åœ¨
     static bool IsFileExist(const std::string& file);
-    // ÎÄ¼ş¼ĞÊÇ·ñ´æÔÚ
+    // æ–‡ä»¶å¤¹æ˜¯å¦å­˜åœ¨
     static bool IsFolderExist(const std::string& dir);
 
-    // ´´½¨ÎÄ¼ş¼Ğ
+    // åˆ›å»ºæ–‡ä»¶å¤¹
     static bool CreateFolder(const std::string& folder);
 };
 

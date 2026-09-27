@@ -4,16 +4,16 @@
 #include <sstream>
 using namespace std;
 
-// ×óÑ­»·ÒÆÎ»º¯Êı
+// å·¦å¾ªç¯ç§»ä½å‡½æ•°
 #define LEFT_ROTATE(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
-// MD5Ëã·¨µÄËÄ¸ö»ù±¾º¯Êı
+// MD5ç®—æ³•çš„å››ä¸ªåŸºæœ¬å‡½æ•°
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define H(x, y, z) ((x) ^ (y) ^ (z))
 #define I(x, y, z) ((y) ^ ((x) | (~z)))
 
-// MD5×ª»»º¯Êı
+// MD5è½¬æ¢å‡½æ•°
 #define FF(a, b, c, d, x, s, ac)                        \
     {                                                   \
         (a) += F((b), (c), (d)) + (x) + (uint32_t)(ac); \
@@ -39,7 +39,7 @@ using namespace std;
         (a) += (b);                                     \
     }
 
-// ¼ÆËã×Ö·û´®µÄMD5Öµ
+// è®¡ç®—å­—ç¬¦ä¸²çš„MD5å€¼
 string EncryptMD5::compute(const string& input)
 {
     reset();
@@ -63,13 +63,13 @@ void EncryptMD5::transform(const uint8_t block[64])
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
     uint32_t x[16];
 
-    // ½«512Î»µÄ¿é·Ö³É16¸ö32Î»µÄ×Ö
+    // å°†512ä½çš„å—åˆ†æˆ16ä¸ª32ä½çš„å­—
     for (int i = 0, j = 0; j < 64; i++, j += 4)
     {
         x[i] = ((uint32_t)block[j]) | (((uint32_t)block[j + 1]) << 8) | (((uint32_t)block[j + 2]) << 16) | (((uint32_t)block[j + 3]) << 24);
     }
 
-    // µÚÒ»ÂÖ
+    // ç¬¬ä¸€è½®
     FF(a, b, c, d, x[0], 7, 0xd76aa478);
     FF(d, a, b, c, x[1], 12, 0xe8c7b756);
     FF(c, d, a, b, x[2], 17, 0x242070db);
@@ -87,7 +87,7 @@ void EncryptMD5::transform(const uint8_t block[64])
     FF(c, d, a, b, x[14], 17, 0xa679438e);
     FF(b, c, d, a, x[15], 22, 0x49b40821);
 
-    // µÚ¶şÂÖ
+    // ç¬¬äºŒè½®
     GG(a, b, c, d, x[1], 5, 0xf61e2562);
     GG(d, a, b, c, x[6], 9, 0xc040b340);
     GG(c, d, a, b, x[11], 14, 0x265e5a51);
@@ -105,7 +105,7 @@ void EncryptMD5::transform(const uint8_t block[64])
     GG(c, d, a, b, x[7], 14, 0x676f02d9);
     GG(b, c, d, a, x[12], 20, 0x8d2a4c8a);
 
-    // µÚÈıÂÖ
+    // ç¬¬ä¸‰è½®
     HH(a, b, c, d, x[5], 4, 0xfffa3942);
     HH(d, a, b, c, x[8], 11, 0x8771f681);
     HH(c, d, a, b, x[11], 16, 0x6d9d6122);
@@ -123,7 +123,7 @@ void EncryptMD5::transform(const uint8_t block[64])
     HH(c, d, a, b, x[15], 16, 0x1fa27cf8);
     HH(b, c, d, a, x[2], 23, 0xc4ac5665);
 
-    // µÚËÄÂÖ
+    // ç¬¬å››è½®
     II(a, b, c, d, x[0], 6, 0xf4292244);
     II(d, a, b, c, x[7], 10, 0x432aff97);
     II(c, d, a, b, x[14], 15, 0xab9423a7);

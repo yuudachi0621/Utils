@@ -9,24 +9,24 @@ public:
         reset();
     }
 
-    // ¼ÆËã×Ö·û´®µÄMD5Öµ
+    // è®¡ç®—å­—ç¬¦ä¸²çš„MD5å€¼
     std::string compute(const std::string& input);
 
 private:
-    // ÄÚ²¿´¦Àíº¯Êı
+    // å†…éƒ¨å¤„ç†å‡½æ•°
     void transform(const uint8_t block[64]);
 
-    // Ìî³äÊäÈëÊı¾İ
+    // å¡«å……è¾“å…¥æ•°æ®
     void update(const uint8_t* input, size_t length);
 
-    // Íê³É¼ÆËã²¢·µ»Ø½á¹û
+    // å®Œæˆè®¡ç®—å¹¶è¿”å›ç»“æœ
     void final(uint8_t digest[16]);
 
-    // ÖØÖÃMD5¼ÆËã×´Ì¬
+    // é‡ç½®MD5è®¡ç®—çŠ¶æ€
     void reset();
 
 private:
-    uint32_t state[4];  // MD5µÄËÄ¸ö×´Ì¬¼Ä´æÆ÷(A, B, C, D)
-    uint8_t buffer[64]; // 512Î»µÄÊäÈë»º³åÇø
-    uint64_t count[2];  // 64Î»µÄÎ»¼ÆÊıÆ÷
+    uint32_t state[4];  // MD5çš„å››ä¸ªçŠ¶æ€å¯„å­˜å™¨(A, B, C, D)
+    uint8_t buffer[64]; // 512ä½çš„è¾“å…¥ç¼“å†²åŒº
+    uint64_t count[2];  // 64ä½çš„ä½è®¡æ•°å™¨
 };
