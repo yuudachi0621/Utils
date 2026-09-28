@@ -139,10 +139,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\pool;E:\Code\Utils\src\container;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)src;$(SolutionDir)src\thread;$(SolutionDir)src\log;$(SolutionDir)src\container;$(SolutionDir)src\3rd\json;$(SolutionDir)src\3rd\easyloggingpp;$(SolutionDir)src\3rd\ghc;$(SolutionDir)src\algorithm;$(SolutionDir)src\tool;$(SolutionDir)src\pool;$(SolutionDir)src\http;$(SolutionDir)src\file;E:\Program Files (x86)\MySQL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

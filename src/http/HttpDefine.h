@@ -3,26 +3,46 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// ×ÊÔ´Â·¾¶
-static const std::string g_resourcePath = "";
+// èµ„æºè·¯å¾„ï¼šä¼˜å…ˆä½¿ç”¨ CMake æ³¨å…¥çš„é¡¹ç›®èµ„æºç›®å½•ï¼Œæœªé…ç½®æ—¶ä½¿ç”¨ä»“åº“é»˜è®¤è·¯å¾„ã€‚
+#ifndef UTILS_RESOURCE_DIR
+#define UTILS_RESOURCE_DIR "../resource"
+#endif
+inline const std::string g_resourcePath = UTILS_RESOURCE_DIR;
 
 struct HttpRequestState
 {
-    std::string comleteMessage;                           // ÇëÇóÍêÕû±¨ÎÄ
-    std::string method;                                   // ÇëÇó·½·¨
-    std::string path;                                     // ÇëÇóµÄ×ÊÔ´URL
-    std::string version;                                  // HTTP°æ±¾
-    bool keep_alive;                                      // Keep-Alive
-    std::unordered_map<std::string, std::string> headers; // ÇëÇóÍ·
-    std::string body;                                     // ÇëÇóÌå
+    // åªä¿å­˜è¯·æ±‚å¤´åŸå§‹æŠ¥æ–‡ï¼›æ­£æ–‡å•ç‹¬ä¿å­˜åœ¨ bodyï¼Œé¿å…è§£æç²˜åŒ…æ•°æ®æ—¶é‡å¤å¤åˆ¶æ­£æ–‡ã€‚
+    std::string comleteMessage;
+
+    // è¯·æ±‚è¡Œçš„æ ‡å‡†ç»„æˆéƒ¨åˆ†ã€‚
+    std::string method;  // è¯·æ±‚æ–¹æ³•ï¼Œä¾‹å¦‚ GET/POST/PUT/PATCH/DELETE
+    std::string path;    // ä¸å«æŸ¥è¯¢å­—ç¬¦ä¸²çš„èµ„æºè·¯å¾„
+    std::string query;   // URL ä¸­çš„æŸ¥è¯¢å­—ç¬¦ä¸²
+    std::string version; // å»æ‰ HTTP/ å‰ç¼€åçš„ç‰ˆæœ¬å·ï¼Œä¾‹å¦‚ 1.1
+
+    // è§£æç»“æœæ ‡å¿—ã€‚valid ä¸º false æ—¶ä¸Šå±‚ç›´æ¥è¿”å› 400ï¼Œä¸è¿›å…¥ä¸šåŠ¡å¤„ç†ã€‚
+    bool valid          = false; // è¯·æ±‚å¤´å’Œè¯·æ±‚è¡Œæ˜¯å¦è§£ææˆåŠŸ
+    bool keep_alive     = false; // æ˜¯å¦å…è®¸å¤ç”¨å½“å‰ TCP è¿æ¥
+    bool chunked        = false; // è¯·æ±‚ä½“æ˜¯å¦ä½¿ç”¨ Transfer-Encoding: chunked
+    bool expectContinue = false; // æ˜¯å¦åŒ…å« Expect: 100-continue
+
+    // Header é”®ç»Ÿä¸€è½¬æˆå°å†™ï¼Œä¸šåŠ¡å±‚é€šè¿‡å°å†™é”®æŸ¥æ‰¾ã€‚
+    std::unordered_map<std::string, std::string> headers;
+
+    // è¯·æ±‚ä½“ç”± WebServer æŒ‰ Content-Length æˆ– chunked è§„åˆ™å¡«å……ã€‚
+    std::string body;
 
     void reset()
     {
         comleteMessage.clear();
         method.clear();
         path.clear();
+        query.clear();
         version.clear();
-        keep_alive = false;
+        valid          = false;
+        keep_alive     = false;
+        chunked        = false;
+        expectContinue = false;
         headers.clear();
         body.clear();
     }
@@ -30,23 +50,24 @@ struct HttpRequestState
 
 struct HttpResponseState
 {
-    std::string version = "HTTP/1.1";                     // HTTP°æ±¾
-    int code            = 200;                            // ×´Ì¬Âë
-    std::string path;                                     // ÏìÓ¦×ÊÔ´Â·¾¶
-    std::unordered_map<std::string, std::string> headers; // ¶¯Ì¬Í·²¿
-    std::string content;
+    // å“åº”å¯¹è±¡åªåœ¨å•ä¸ªè¯·æ±‚ç”Ÿå‘½å‘¨æœŸå†…ä½¿ç”¨ï¼Œä¸éœ€è¦è·¨è¿æ¥å…±äº«ã€‚
+    std::string version = "HTTP/1.1"; // å“åº” HTTP ç‰ˆæœ¬
+    int code            = 200;        // å“åº”çŠ¶æ€ç 
+
+    // headers ä¿å­˜çŠ¶æ€è¡Œä¹‹å¤–çš„å“åº”å¤´ï¼›content ä¿å­˜å¾…å‘é€æ­£æ–‡ã€‚
+    std::unordered_map<std::string, std::string> headers;
+    std::string content; // HEADã€204 ç­‰å“åº”ä¼šåœ¨ BuildResponse ä¸­æŠ‘åˆ¶æ­£æ–‡å‘é€
 
     void reset()
     {
         version = "HTTP/1.1";
         code    = 200;
-        path.clear();
         headers.clear();
         content.clear();
     }
 };
 
-const std::unordered_set<std::string> g_localHTML_Map = {
+inline const std::unordered_set<std::string> g_localHTML_Map = {
     "/index",
     "/register",
     "/login",
@@ -55,17 +76,30 @@ const std::unordered_set<std::string> g_localHTML_Map = {
     "/picture",
 };
 
-const std::unordered_map<int, std::string> g_httpStatusCodeMap = {
-    {200, "OK"},                         //	ÇëÇó³É¹¦¡£Ò»°ãÓÃÓÚGETÓëPOSTÇëÇó
-    {400, "Bad Request"},                // ¿Í»§¶ËÇëÇóµÄÓï·¨´íÎó£¬·şÎñÆ÷ÎŞ·¨Àí½â
-    {403, "Forbidden"},                  // ·şÎñÆ÷Àí½âÇëÇó¿Í»§¶ËµÄÇëÇó£¬µ«ÊÇ¾Ü¾øÖ´ĞĞ´ËÇëÇó
-    {404, "Not Found"},                  // ·şÎñÆ÷ÎŞ·¨¸ù¾İ¿Í»§¶ËµÄÇëÇóÕÒµ½×ÊÔ´£¨ÍøÒ³£©
-    {500, "Internal Server Error"},      // ·şÎñÆ÷ÄÚ²¿´íÎó£¬ÎŞ·¨Íê³ÉÇëÇó
-    {501, "Not Implemented"},            // ·şÎñÆ÷²»Ö§³ÖÇëÇóµÄ¹¦ÄÜ£¬ÎŞ·¨Íê³ÉÇëÇó
-    {505, "HTTP Version not supported"}, // ·şÎñÆ÷²»Ö§³ÖÇëÇóµÄHTTPĞ­ÒéµÄ°æ±¾£¬ÎŞ·¨Íê³É´¦Àí
+inline const std::unordered_map<int, std::string> g_httpStatusCodeMap = {
+    {100, "Continue"},
+    {200, "OK"},
+    {201, "Created"},
+    {204, "No Content"},
+    {206, "Partial Content"},
+    {304, "Not Modified"},
+    {400, "Bad Request"},
+    {403, "Forbidden"},
+    {404, "Not Found"},
+    {405, "Method Not Allowed"},
+    {408, "Request Timeout"},
+    {411, "Length Required"},
+    {413, "Payload Too Large"},
+    {415, "Unsupported Media Type"},
+    {416, "Range Not Satisfiable"},
+    {431, "Request Header Fields Too Large"},
+    {500, "Internal Server Error"},
+    {501, "Not Implemented"},
+    {503, "Service Unavailable"},
+    {505, "HTTP Version Not Supported"},
 };
 
-const std::unordered_map<std::string, std::string> g_contentTypeMap = {
+inline const std::unordered_map<std::string, std::string> g_contentTypeMap = {
     {".html", "text/html"},
     {".xml", "text/xml"},
     {".xhtml", "application/xhtml+xml"},
@@ -86,7 +120,12 @@ const std::unordered_map<std::string, std::string> g_contentTypeMap = {
     {".css", "text/css"},
     {".js", "text/javascript"},
     {".json", "application/json"},
-    {".mp4", "video/mpeg4"},
+    {".mp4", "video/mp4"},
+    {".m4v", "video/x-m4v"},
+    {".webm", "video/webm"},
+    {".ogv", "video/ogg"},
+    {".ogg", "video/ogg"},
+    {".mov", "video/quicktime"},
     {".mp3", "audio/mp3"},
     {".wav", "audio/wav"},
     {".001", "application/x-001"},

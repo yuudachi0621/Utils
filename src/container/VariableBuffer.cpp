@@ -1,16 +1,11 @@
 #include "VariableBuffer.h"
 
-VariableBuffer::VariableBuffer(int initBufferSize)
-    : m_buffer(initBufferSize), m_readPos(0), m_writePos(0)
-{
-}
+#include <cstring>
+#include <utility>
 
-VariableBuffer::~VariableBuffer()
+VariableBuffer::VariableBuffer(size_t initBufferSize)
+    : m_buffer(std::max<size_t>(initBufferSize, 1))
 {
-    std::vector<char> empty;
-    std::swap(m_buffer, empty);
-    m_readPos  = 0;
-    m_writePos = 0;
 }
 
 size_t VariableBuffer::InvalidLength() const
@@ -30,96 +25,86 @@ size_t VariableBuffer::WritableLength() const
 
 const char* VariableBuffer::GetValidData() const
 {
-    return &m_buffer[m_readPos];
+    return m_buffer.data() + m_readPos;
+}
+
+char* VariableBuffer::ReadableBegin()
+{
+    return m_buffer.data() + m_readPos;
+}
+
+char* VariableBuffer::WritableBegin()
+{
+    EnsureWritable(1);
+    return m_buffer.data() + m_writePos;
 }
 
 std::string VariableBuffer::GetValidDataToStr() const
 {
-    size_t len = ValidLength();
-    if (len == 0) return "";
-    return std::string(GetValidData(), len);
+    const size_t length = ValidLength();
+    return length == 0 ? std::string() : std::string(GetValidData(), length);
 }
 
 void VariableBuffer::Append(const char* str, size_t len)
 {
-    EnsureWriteable(len);
-    std::copy(str, str + len, WritableBegin());
+    if (!str || len == 0)
+        return;
+
+    EnsureWritable(len);
+    std::copy_n(str, len, m_buffer.data() + m_writePos);
     AddWritePos(len);
 }
 
 void VariableBuffer::AddReadPos(size_t len)
 {
-    m_readPos += len;
-    if (m_readPos == m_writePos) m_readPos = m_writePos = 0;
-}
+    const size_t consumed = (std::min)(len, ValidLength());
+    m_readPos += consumed;
 
-void VariableBuffer::AddWritePos(size_t len)
-{
-    m_writePos += len;
+    if (m_readPos == m_writePos)
+    {
+        m_readPos = 0;
+        m_writePos = 0;
+    }
 }
 
 void VariableBuffer::Consume(size_t n)
 {
-    m_readPos += n;
-    if (m_readPos == m_writePos)
-        m_readPos = m_writePos = 0;
+    AddReadPos(n);
+}
+
+void VariableBuffer::AddWritePos(size_t len)
+{
+    m_writePos += (std::min)(len, WritableLength());
 }
 
 void VariableBuffer::Reset()
 {
-    m_readPos  = 0;
+    m_readPos = 0;
     m_writePos = 0;
 }
 
-char* VariableBuffer::BeginPtr()
-{
-    return &*m_buffer.begin();
-}
-
-const char* VariableBuffer::BeginPtr() const
-{
-    return &*m_buffer.begin();
-}
-
-char* VariableBuffer::ReadableBegin()
-{
-    return &m_buffer[m_readPos];
-}
-
-char* VariableBuffer::WritableBegin()
-{
-    return &m_buffer[m_writePos];
-}
-
-void VariableBuffer::EnsureWriteable(size_t len)
+void VariableBuffer::EnsureWritable(size_t len)
 {
     if (WritableLength() < len)
-    {
         ResizeSpace(len);
-    }
 }
 
 void VariableBuffer::ResizeSpace(size_t len)
 {
-    if (WritableLength() + InvalidLength() < len)
-    {
-        m_buffer.resize(m_writePos + len + 1);
-    }
-    else
-    {
-        size_t validLen = ValidLength();
-        std::copy(BeginPtr() + m_readPos, BeginPtr() + m_writePos, BeginPtr());
-        m_readPos  = 0;
-        m_writePos = validLen;
-    }
-}
+    const size_t validLength = ValidLength();
 
-void VariableBuffer::compact()
-{
-    if (m_readPos == 0) return;
+    // 尾部空间加已失效空间足够时，将未读数据移动到缓冲区头部。
+    if (m_buffer.size() - m_writePos + m_readPos >= len)
+    {
+        if (validLength != 0 && m_readPos != 0)
+            std::memmove(m_buffer.data(), m_buffer.data() + m_readPos, validLength);
 
-    size_t readable = ValidLength();
-    memmove(&m_buffer[0], &m_buffer[m_readPos], readable);
-    m_readPos  = 0;
-    m_writePos = readable;
+        m_readPos = 0;
+        m_writePos = validLength;
+        return;
+    }
+
+    // 即使整理后也不足，才进行扩容；先保留未读数据。
+    const size_t newSize = m_writePos + len;
+    m_buffer.resize(newSize);
 }

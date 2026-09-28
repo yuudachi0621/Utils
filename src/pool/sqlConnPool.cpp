@@ -39,15 +39,15 @@ void util::sqlConnPool::Init(const std::string& host, int port, const std::strin
 
 MYSQL* util::sqlConnPool::GetFreeConn()
 {
-    if (m_connQue.empty())
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    // 使用 try_pop，避免 empty() 与 pop() 之间被其他线程抢先取空后永久阻塞。
+    MYSQL* sqlPtr = nullptr;
+    if (!m_connQue.try_pop(sqlPtr))
     {
         LOG_WARN("free sql connection is empty, so busy!");
         return nullptr;
     }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
-    MYSQL* sqlPtr = nullptr;
-    sqlPtr        = m_connQue.pop();
     return sqlPtr;
 }
 
